@@ -26,10 +26,10 @@ export const HAIR_TEMPLATE: Template = {
 			w: w,
 		};
 	},
-	leftFront: () => ({ tx: -20, ty: 0, w: 1 }),
-	rightFront: () => ({ tx: 20, ty: 0, w: 1 }),
-	leftBack: () => ({ tx: 10, ty: 0, w: 1 }),
-	rightBack: () => ({ tx: -10, ty: 0, w: 1 }),
+	leftFront: (_, v) => ({ tx: -20, ty: 0, w: curve.body(v) }),
+	rightFront: (_, v) => ({ tx: 20, ty: 0, w: curve.body(v) }),
+	leftBack: (_, v) => ({ tx: 10, ty: 0, w: curve.body(v) }),
+	rightBack: (_, v) => ({ tx: -10, ty: 0, w: curve.body(v) }),
 };
 
 export const ARM_TEMPLATE: Template = {
@@ -202,15 +202,7 @@ function blink() {
 }
 setTimeout(blink, 1000);
 
-const params = { breathing: 0, x: 0.5, y: 0.5 };
-
-gsap.to(params, {
-	breathing: 1,
-	duration: 1.2,
-	ease: "sine.inOut",
-	repeat: 0,
-	yoyo: true,
-});
+const params = { x: 0.5, y: 0.5 };
 
 function randomMove() {
 	gsap.to(params, {
