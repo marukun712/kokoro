@@ -37,41 +37,61 @@ pipe(matcherA, matcherB)   // いずれかにマッチするレイヤー
 ### KokoroRig - メッシュ変形
 
 `KokoroRig` はキャラクターの骨格的な変形を担います。
-毎フレーム、各頂点を UV 座標 (u, v) に正規化してから `PoseTransform` 関数を呼び出し、平行移動 (tx, ty)を計算して頂点バッファに書き戻します。
+毎フレーム、各頂点を UV 座標 (u, v) に正規化してから `PoseTransform` 関数を呼び出し、平行移動 (tx, ty) および回転 (rot, pivot) を計算して頂点バッファに書き戻します。
 変形の強さは頂点の位置によって連続的に変化するため、ボーンを使わずにソフトボディ的な動きを実現できます。
 
 ```ts
-const rig = new KokoroRig(app, nodes, {
-  poseTemplate: POSE_TEMPLATE,
-  bounds: calcBounds(nodes),
-});
+const timer = new RigTimer();
+const blender = new PoseBlender(POSE_TEMPLATE, timer);
+const rig = new KokoroRig(nodes);
 
-// 毎フレーム setPose を呼びます
-app.ticker.add(() => {
+// 毎フレーム setPose と tick を呼びます
+app.ticker.add((ticker) => {
   rig.setPose([
-    rig.lerpBlend("left", "right", mouseX), // 2 つのポーズを補間
-    rig.lerpBlend("up", "down", mouseY),
+    blender.lerp("left", "right", mouseX), // 2 つのポーズを補間
+    blender.lerp("up", "down", mouseY),
   ]);
+  timer.tick(ticker.deltaTime);
+  rig.tick(timer.time);
 });
 ```
 
 #### Template と PoseTransform
 
 `Template` はポーズ名をキーとする `PoseTransform` の辞書です。
-`PoseTransform` は `(u, v, t) => { tx, ty, w }` のシグネチャを持ち、頂点ごとの変形量を返す関数です。
-`w` はウェイトで、複数のポーズが合成される際のブレンド比率になります。
+`PoseTransform` は `(u, v, t) => Transform` のシグネチャを持ち、頂点ごとの変形量を返す関数です。
+
+`Transform` のフィールド:
+
+- `tx`, `ty` : 平行移動量 (ピクセル)
+- `w` : ウェイト (0~1)。複数のポーズが合成される際のブレンド比率
+- `rot` (省略可) : 回転量 (ラジアン)
+- `pivot` (省略可) : 回転の起点 (UV座標)。`rot` と合わせて指定する
 
 ```ts
 const MY_TEMPLATE: Template = {
-  left: (u, v) => ({
-    tx: -100,
-    ty: 0,
-    w: curve.body(1 - v), // 上半身ほど大きく動かす
-  }),
+  left: (u, v) => {
+    const { fromTop } = getSpatialParams(u, v);
+    return {
+      tx: -100,
+      ty: 0,
+      w: curve.body(fromTop),
+    };
+  },
+  tilt: (u, v) => {
+    const { fromTop } = getSpatialParams(u, v);
+    return {
+      tx: 0,
+      ty: 0,
+      w: curve.body(fromTop),
+      rot: 0.2,
+      pivot: { u: 0.5, v: 1.0 },
+    };
+  },
 };
 ```
 
-`curve` にはイージング関数が収録されており、UV 値からウェイトへの変換に使います。
+`curve` にはイージング関数が収録されており、`getSpatialParams` で得た UV 由来の値をウェイトへ変換する際に使います。
 
 #### 親リグの継承
 

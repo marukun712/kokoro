@@ -18,18 +18,20 @@ PSD レイヤーをメッシュ変形でアニメーションさせる、人型�
 ### ウェイト関数で動かす
 
 各頂点には UV 座標 (u, v) が割り当てられています。u=0 が左端・u=1 が右端、v=0 が上端・v=1 が下端です。
-ポーズは `(u, v, t) => { tx, ty, w }` という形の関数で表現します。
+ポーズは `(u, v, t) => Transform` という形の関数で表現します。
 
 - `tx`, `ty` : その頂点をどれだけ平行移動するか
 - `w` : このポーズのウェイト (0~1)
+- `rot` (省略可) : 回転量 (ラジアン)
+- `pivot` (省略可) : 回転の起点 (UV座標)。`rot` と合わせて指定する
 
 ウェイト `w` に UV 座標を使うことで、「上半身ほど大きく動く」「毛先ほどよく揺れる」といった
 位置に連動した自然な変形を1つの関数で表現できます。
 
 ```ts
-// 「左に傾く」ポーズの例。頭に近いほど大きく動く。
 left: (u, v) => ({
   tx: -100,
+  ty: 0,
   w: curve.body(1 - v),
 })
 ```
@@ -40,13 +42,13 @@ left: (u, v) => ({
 ### ポーズの補間と合成
 
 複数のポーズを同時に `setPose` に渡すと、ウェイトに従って加算合成されます。
-`lerpBlend` で2つのポーズを線形補間した新しいポーズを作ることもできます。
+`PoseBlender.lerp` で2つのポーズを線形補間した新しいポーズを作ることもできます。
 
 ```ts
 rig.setPose([
-  rig.lerpBlend("left", "right", mouseX),
-  rig.lerpBlend("up", "down", mouseY),
-  rig.lerpBlend("normal", "breathing", breathCycle),
+  blender.lerp("left", "right", mouseX),
+  blender.lerp("up", "down", mouseY),
+  blender.lerp("normal", "breathing", breathCycle),
 ]);
 ```
 
