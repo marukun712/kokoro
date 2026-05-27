@@ -1,4 +1,3 @@
-import type * as PIXI from "pixi.js";
 import type { SpriteNode } from "../image/psd";
 
 /** 1フレームの変形量 */
@@ -9,6 +8,10 @@ export interface Transform {
 	ty: number;
 	/** この変形のウェイト(0~1) */
 	w: number;
+	/** 回転量 (ラジアン) */
+	rot?: number;
+	/** 回転の起点 (UV座標) */
+	pivot?: { u: number; v: number };
 }
 
 /**
@@ -22,14 +25,12 @@ export type PoseTransform = (u: number, v: number, t: number) => Transform;
 
 /**
  * ポーズ名をキーとする {@link PoseTransform} の辞書。
- * {@link KokoroRig.lerpBlend} で補間して使う。
+ * {@link PoseBlender.lerp} で補間して使う。
  */
 export type Template = Record<string, PoseTransform>;
 
 /** {@link KokoroRig} コンストラクタのオプション */
 export interface KokoroRigOptions {
-	/** 使用するポーズテンプレート */
-	poseTemplate: Template;
 	/**
 	 * 親リグ。指定すると親の activeTransform も合成される。
 	 * 部位ごとに独立したリグを作りつつ、ルートリグの動きを継承させたい場合に使う。
@@ -42,8 +43,6 @@ export interface KokoroRigOptions {
  * キャラクターの体幹・髪・腕などをソフトボディ的に変形させるリグ。
  */
 export class KokoroRig {
-	private readonly template: Template;
-
 	/** ローカル座標の初期頂点バッファ */
 	private readonly origVerts: Float32Array;
 	/** ワールド座標の初期頂点バッファ */
@@ -65,21 +64,13 @@ export class KokoroRig {
 	/** 現フレームに適用する変形関数リスト */
 	public activeTransform: PoseTransform[] = [];
 	private readonly parent?: KokoroRig;
-	private time = 0;
-	private scale = Math.random();
 
 	/**
-	 * @param app     - ticker の登録先となる PIXI.Application
 	 * @param nodes   - 変形対象の {@link SpriteNode} 配列
 	 * @param options - {@link KokoroRigOptions}
 	 */
-	constructor(
-		app: PIXI.Application,
-		nodes: SpriteNode[],
-		options: KokoroRigOptions,
-	) {
-		const { poseTemplate, parent } = options;
-		this.template = poseTemplate;
+	constructor(nodes: SpriteNode[], options: KokoroRigOptions = {}) {
+		const { parent } = options;
 		this.parent = parent;
 
 		// 全ノードの頂点数を集計してバッファを確保
@@ -140,33 +131,6 @@ export class KokoroRig {
 		this.minY = bounds.minY;
 		this.w = bounds.w;
 		this.h = bounds.h;
-
-		app.ticker.add((t) => {
-			this.tick();
-			this.time += t.deltaTime * this.scale;
-		});
-	}
-
-	/**
-	 * テンプレート内の2つのポーズを線形補間した {@link PoseTransform} を返す。
-	 * 戻り値をそのまま {@link setPose} に渡すことができる。
-	 *
-	 * @param from - 補間開始のポーズ名 (t=0 側)
-	 * @param to   - 補間終了のポーズ名 (t=1 側)
-	 * @param t    - 補間係数 (0~1)
-	 */
-	public lerpBlend(from: string, to: string, t: number): PoseTransform {
-		const a = this.template[from];
-		const b = this.template[to];
-		return (u, v) => {
-			const ta = a(u, v, this.time);
-			const tb = b(u, v, this.time);
-			return {
-				tx: ta.tx + (tb.tx - ta.tx) * t,
-				ty: ta.ty + (tb.ty - ta.ty) * t,
-				w: ta.w + (tb.w - ta.w) * t,
-			};
-		};
 	}
 
 	/**
@@ -193,7 +157,7 @@ export class KokoroRig {
 	}
 
 	/** 毎フレーム呼ばれる頂点変形処理 */
-	private tick(): void {
+	public tick(time: number): void {
 		const total = this.origVerts.length / 2;
 
 		for (let vi = 0; vi < total; vi++) {
@@ -210,16 +174,27 @@ export class KokoroRig {
 				const pu = (gx - this.parent.minX) / this.parent.w;
 				const pv = (gy - this.parent.minY) / this.parent.h;
 				for (const field of this.parent.activeTransform) {
-					const tr = field(pu, pv, this.time);
+					const tr = field(pu, pv, time);
 					totalTx += tr.tx * tr.w;
 					totalTy += tr.ty * tr.w;
 				}
 			}
 
 			for (const field of this.activeTransform) {
-				const tr = field(u, v, this.time);
-				totalTx += tr.tx * tr.w;
-				totalTy += tr.ty * tr.w;
+				const tr = field(u, v, time);
+				if (tr.rot !== undefined && tr.pivot !== undefined) {
+					const px = this.minX + tr.pivot.u * this.w;
+					const py = this.minY + tr.pivot.v * this.h;
+					const dx = gx - px;
+					const dy = gy - py;
+					const cos = Math.cos(tr.rot * tr.w);
+					const sin = Math.sin(tr.rot * tr.w);
+					totalTx += dx * cos - dy * sin - dx + tr.tx * tr.w;
+					totalTy += dx * sin + dy * cos - dy + tr.ty * tr.w;
+				} else {
+					totalTx += tr.tx * tr.w;
+					totalTy += tr.ty * tr.w;
+				}
 			}
 
 			this.verts[vi * 2] = this.origVerts[vi * 2] + totalTx;

@@ -2,12 +2,16 @@ import {
 	byName,
 	curve,
 	drawCharacter,
+	getSpatialParams,
 	groupNodes,
 	KokoroFace,
 	KokoroRig,
 	POSE_TEMPLATE,
+	PoseBlender,
 	pipe,
 	psdGroup,
+	RigGroup,
+	RigTimer,
 	setupCanvas,
 	type Template,
 	walkPSD,
@@ -16,41 +20,72 @@ import gsap from "gsap";
 import { Container } from "pixi.js";
 import { Viewport } from "pixi-viewport";
 
+// 変形テンプレートの定義
 export const HAIR_TEMPLATE: Template = {
-	swing: (_, v, t) => {
+	swing: (u, v, t) => {
+		const { fromBottom } = getSpatialParams(u, v);
 		const swing = Math.sin(t * 0.05);
-		const w = curve.body(v);
 		return {
-			tx: 40 * swing,
+			tx: 0,
 			ty: 0,
-			w: w,
+			rot: 0.08 * swing,
+			pivot: { u: 0.5, v: 0.0 },
+			w: curve.body(fromBottom),
 		};
 	},
-	leftFront: (_, v) => ({ tx: -20, ty: 0, w: curve.body(v) }),
-	rightFront: (_, v) => ({ tx: 20, ty: 0, w: curve.body(v) }),
-	leftBack: (_, v) => ({ tx: 10, ty: 0, w: curve.body(v) }),
-	rightBack: (_, v) => ({ tx: -10, ty: 0, w: curve.body(v) }),
+	leftFront: (u, v) => {
+		const { fromBottom } = getSpatialParams(u, v);
+		return { tx: -20, ty: 0, w: curve.body(fromBottom) };
+	},
+	rightFront: (u, v) => {
+		const { fromBottom } = getSpatialParams(u, v);
+		return { tx: 20, ty: 0, w: curve.body(fromBottom) };
+	},
+	leftBack: (u, v) => {
+		const { fromBottom } = getSpatialParams(u, v);
+		return { tx: 10, ty: 0, w: curve.body(fromBottom) };
+	},
+	rightBack: (u, v) => {
+		const { fromBottom } = getSpatialParams(u, v);
+		return { tx: -10, ty: 0, w: curve.body(fromBottom) };
+	},
 };
 
-export const ARM_TEMPLATE: Template = {
-	swing: (_, v, t) => {
+export const SWING_TEMPLATE: Template = {
+	swing: (u, v, t) => {
+		const { fromBottom } = getSpatialParams(u, v);
 		const swing = Math.sin(t * 0.05);
-		const w = curve.hair(v);
+		const w = curve.arm(fromBottom);
 		return {
-			tx: 30 * swing,
+			tx: 0,
 			ty: 0,
+			rot: 0.1 * swing,
+			pivot: { u: 0.5, v: 0.0 },
 			w: w,
 		};
 	},
 };
 
 export const EYE_TEMPLATE: Template = {
-	left: () => ({ tx: -10, ty: 0, w: 1 }),
-	right: () => ({ tx: 10, ty: 0, w: 1 }),
-	up: () => ({ tx: 0, ty: 5, w: 1 }),
-	down: () => ({ tx: 0, ty: -5, w: 1 }),
+	left: (u, v) => {
+		const { fromLeft } = getSpatialParams(u, v);
+		return { tx: -10, ty: 0, w: fromLeft };
+	},
+	right: (u, v) => {
+		const { fromLeft } = getSpatialParams(u, v);
+		return { tx: 10, ty: 0, w: fromLeft };
+	},
+	up: (u, v) => {
+		const { fromTop } = getSpatialParams(u, v);
+		return { tx: 0, ty: 5, w: fromTop };
+	},
+	down: (u, v) => {
+		const { fromBottom } = getSpatialParams(u, v);
+		return { tx: 0, ty: -5, w: fromBottom };
+	},
 };
 
+// PIXI.jsのセットアップ
 const app = await setupCanvas(document.body);
 
 const viewport = new Viewport({
@@ -64,88 +99,95 @@ const viewport = new Viewport({
 app.stage.addChild(viewport);
 viewport.drag().pinch().wheel();
 
+// PSDのロード
 const index = await walkPSD("/models/character.psd", {
-	show: byName("口　閉じ"),
+	show: byName("口　閉じ"), // 初期状態での差分を指定
 	hide: byName("笑顔　口"),
 });
 
+// Canvasに描画
 const nodes = drawCharacter(index);
 
+// rootコンテナの定義
 const root = new Container();
 for (const node of nodes) root.addChild(node.container);
 
+// サイズ調整
 root.scale.set(0.1);
 viewport.addChild(root);
 
-const hairFront = groupNodes(
-	nodes,
-	pipe(psdGroup("前　髪"), psdGroup("もみあげ")),
-);
-const hairBack = groupNodes(nodes, psdGroup("後　髪"));
-const eyeL = groupNodes(
-	nodes,
-	pipe(psdGroup("左　瞳"), psdGroup("左　ハイライト")),
-);
-const eyeR = groupNodes(
-	nodes,
-	pipe(psdGroup("右　瞳"), psdGroup("右　ハイライト")),
-);
+// レイヤーをグループ化してRigを作成
+const rig = new KokoroRig(nodes);
 
-const skirt = groupNodes(nodes, psdGroup("スカート"));
-const ribbon = groupNodes(nodes, psdGroup("リボン"));
-const leftArm = groupNodes(nodes, psdGroup("左腕"));
-const rightArm = groupNodes(nodes, psdGroup("右腕"));
+const timer = new RigTimer();
+const hairTimer = new RigTimer(0.8);
+const skirtTimer = new RigTimer(0.5);
+const ribbonTimer = new RigTimer(0.3);
+const armTimer = new RigTimer(0.6);
 
-const rig = new KokoroRig(app, nodes, {
-	poseTemplate: POSE_TEMPLATE,
-});
-const hairFrontRig = new KokoroRig(app, hairFront.nodes, {
-	poseTemplate: HAIR_TEMPLATE,
-	parent: rig,
-});
-const hairBackRig = new KokoroRig(app, hairBack.nodes, {
-	poseTemplate: HAIR_TEMPLATE,
-	parent: rig,
-});
-const eyeLRig = new KokoroRig(app, eyeL.nodes, {
-	poseTemplate: EYE_TEMPLATE,
-	parent: rig,
-});
-const eyeRRig = new KokoroRig(app, eyeR.nodes, {
-	poseTemplate: EYE_TEMPLATE,
-	parent: rig,
-});
-const skirtRig = new KokoroRig(app, skirt.nodes, {
-	poseTemplate: HAIR_TEMPLATE,
-	parent: rig,
-});
-const ribbonRig = new KokoroRig(app, ribbon.nodes, {
-	poseTemplate: HAIR_TEMPLATE,
-	parent: rig,
-});
-const leftArmRig = new KokoroRig(app, leftArm.nodes, {
-	poseTemplate: ARM_TEMPLATE,
-	parent: rig,
-});
-const rightArmRig = new KokoroRig(app, rightArm.nodes, {
-	poseTemplate: ARM_TEMPLATE,
-	parent: rig,
-});
+const bodyBlender = new PoseBlender(POSE_TEMPLATE, timer);
+const hairBlender = new PoseBlender(HAIR_TEMPLATE, hairTimer);
+const eyeBlender = new PoseBlender(EYE_TEMPLATE, timer);
 
-const expression = new KokoroFace(nodes, [
-	"左　目　閉じ",
-	"右　目　閉じ",
-	"左　ハイライト",
-	"右　ハイライト",
-	"左　まつ毛",
-	"右　まつ毛",
-	"左　瞳",
-	"右　瞳",
-	"左　白目",
-	"右　白目",
-]);
+const rigs = {
+	hairFront: new KokoroRig(
+		groupNodes(nodes, pipe(psdGroup("前　髪"), psdGroup("もみあげ"))).nodes,
+		{ parent: rig },
+	),
+	hairBack: new KokoroRig(groupNodes(nodes, psdGroup("後　髪")).nodes, {
+		parent: rig,
+	}),
+	eyeL: new KokoroRig(
+		groupNodes(nodes, pipe(psdGroup("左　瞳"), psdGroup("左　ハイライト")))
+			.nodes,
+		{ parent: rig },
+	),
+	eyeR: new KokoroRig(
+		groupNodes(nodes, pipe(psdGroup("右　瞳"), psdGroup("右　ハイライト")))
+			.nodes,
+		{ parent: rig },
+	),
+	skirt: new KokoroRig(groupNodes(nodes, psdGroup("スカート")).nodes, {
+		parent: rig,
+	}),
+	ribbon: new KokoroRig(groupNodes(nodes, psdGroup("リボン")).nodes, {
+		parent: rig,
+	}),
+	leftArm: new KokoroRig(groupNodes(nodes, psdGroup("左腕")).nodes, {
+		parent: rig,
+	}),
+	rightArm: new KokoroRig(groupNodes(nodes, psdGroup("右腕")).nodes, {
+		parent: rig,
+	}),
+};
 
-expression.apply({
+const rigList = [
+	rig,
+	rigs.hairFront,
+	rigs.hairBack,
+	rigs.eyeL,
+	rigs.eyeR,
+	rigs.skirt,
+	rigs.ribbon,
+	rigs.leftArm,
+	rigs.rightArm,
+];
+const timerList = [
+	timer,
+	hairTimer,
+	hairTimer,
+	timer,
+	timer,
+	skirtTimer,
+	ribbonTimer,
+	armTimer,
+	armTimer,
+];
+
+const group = new RigGroup();
+for (let i = 0; i < rigList.length; i++) group.add(rigList[i], timerList[i]);
+
+const eyeOpen = {
 	"左　目　閉じ": false,
 	"右　目　閉じ": false,
 	"左　ハイライト": true,
@@ -156,51 +198,34 @@ expression.apply({
 	"右　瞳": true,
 	"左　白目": true,
 	"右　白目": true,
-});
+};
+const eyeClosed = {
+	"左　目　閉じ": true,
+	"右　目　閉じ": true,
+	"左　ハイライト": false,
+	"右　ハイライト": false,
+	"左　まつ毛": false,
+	"右　まつ毛": false,
+	"左　瞳": false,
+	"右　瞳": false,
+	"左　白目": false,
+	"右　白目": false,
+};
 
-function blink() {
-	const tl = gsap.timeline({
-		onComplete: () => setTimeout(blink, 2000 + Math.random() * 3000),
-	});
-	tl.to(
-		{},
-		{
-			duration: 0.07,
-			onComplete: () =>
-				expression.apply({
-					"左　目　閉じ": true,
-					"右　目　閉じ": true,
-					"左　ハイライト": false,
-					"右　ハイライト": false,
-					"左　まつ毛": false,
-					"右　まつ毛": false,
-					"左　瞳": false,
-					"右　瞳": false,
-					"左　白目": false,
-					"右　白目": false,
-				}),
-		},
-	).to(
-		{},
-		{
-			duration: 0.1,
-			onComplete: () =>
-				expression.apply({
-					"左　目　閉じ": false,
-					"右　目　閉じ": false,
-					"左　ハイライト": true,
-					"右　ハイライト": true,
-					"左　まつ毛": true,
-					"右　まつ毛": true,
-					"左　瞳": true,
-					"右　瞳": true,
-					"左　白目": true,
-					"右　白目": true,
-				}),
-		},
-	);
+const expression = new KokoroFace(nodes, Object.keys(eyeOpen));
+expression.apply(eyeOpen);
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function blink() {
+	while (true) {
+		await sleep(2000 + Math.random() * 3000);
+		expression.apply(eyeClosed);
+		await sleep(100);
+		expression.apply(eyeOpen);
+	}
 }
-setTimeout(blink, 1000);
+blink();
 
 const params = { x: 0.5, y: 0.5 };
 
@@ -215,29 +240,30 @@ function randomMove() {
 }
 randomMove();
 
-app.ticker.add(() => {
+app.ticker.add((t) => {
+	const eyePose = [
+		eyeBlender.lerp("left", "right", params.x),
+		eyeBlender.lerp("up", "down", params.y),
+	];
+
+	rigs.eyeL.setPose(eyePose);
+	rigs.eyeR.setPose(eyePose);
 	rig.setPose([
-		rig.lerpBlend("left", "right", params.x),
-		rig.lerpBlend("up", "down", params.y),
+		bodyBlender.lerp("left", "right", params.x),
+		bodyBlender.lerp("up", "down", params.y),
 	]);
-	hairFrontRig.setPose([
-		hairFrontRig.lerpBlend("leftFront", "rightFront", params.x),
+	rigs.hairFront.setPose([
+		hairBlender.lerp("leftFront", "rightFront", params.x),
 		HAIR_TEMPLATE.swing,
 	]);
-	hairBackRig.setPose([
-		hairBackRig.lerpBlend("leftBack", "rightBack", params.x),
+	rigs.hairBack.setPose([
+		hairBlender.lerp("leftBack", "rightBack", params.x),
 		HAIR_TEMPLATE.swing,
 	]);
-	eyeLRig.setPose([
-		eyeLRig.lerpBlend("left", "right", params.x),
-		eyeLRig.lerpBlend("up", "down", params.y),
-	]);
-	eyeRRig.setPose([
-		eyeRRig.lerpBlend("left", "right", params.x),
-		eyeRRig.lerpBlend("up", "down", params.y),
-	]);
-	skirtRig.setPose([HAIR_TEMPLATE.swing]);
-	ribbonRig.setPose([HAIR_TEMPLATE.swing]);
-	leftArmRig.setPose([ARM_TEMPLATE.swing]);
-	rightArmRig.setPose([ARM_TEMPLATE.swing]);
+	rigs.skirt.setPose([SWING_TEMPLATE.swing]);
+	rigs.ribbon.setPose([SWING_TEMPLATE.swing]);
+	rigs.leftArm.setPose([SWING_TEMPLATE.swing]);
+	rigs.rightArm.setPose([SWING_TEMPLATE.swing]);
+
+	group.tick(t.deltaTime);
 });

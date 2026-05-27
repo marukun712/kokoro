@@ -3,7 +3,7 @@ import { CustomEase } from "gsap/CustomEase";
 
 /** UV -> 変形量のイージング関数を格納する辞書型 */
 type Curve = Record<
-	"body" | "upperBody" | "head" | "hair" | "chest",
+	"body" | "upperBody" | "head" | "hair" | "arm" | "chest",
 	(t: number) => number
 >;
 
@@ -15,6 +15,12 @@ export const curve: Curve = {
 	upperBody: gsap.parseEase("power2.in"),
 	head: gsap.parseEase("power3.in"),
 	hair: gsap.parseEase("power4.in"),
+	arm: gsap.parseEase(
+		CustomEase.create(
+			"custom",
+			"M0,0 C0.081,0.464 0.091,0.75 0.199,0.88 0.281,0.979 1,1 1,1 ",
+		),
+	),
 	chest: gsap.parseEase(
 		CustomEase.create("custom", "M0,0 C0.35,0 0.55,1 0.6,1 0.7,1 0.8,0 1,0"),
 	),
