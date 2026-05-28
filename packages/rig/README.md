@@ -1,110 +1,319 @@
 # @kokoro/rig
 
-PSD レイヤーをメッシュ変形でアニメーションさせる、人型キャラクター向けのメッシュ変形ライブラリです。
-複雑な GUI は不要で、コードと頂点ウェイトの定義だけでキャラクターを動かせます。
+エンジニアファーストな人形キャラクター向けメッシュ変形ライブラリ
 
 ## コアコンセプト
 
-### レイヤーのロードと描画
+キャラクターの PSD ファイルを読み込み、レイヤーを PIXI スプライトとして描画し、毎フレームの頂点変形でアニメーションさせます。
 
-`walkPSD` は PSD を再帰的に走査して末端レイヤーをフラットな配列として返します。
-各スプライトは `SpriteNode` として管理されます。
+---
+
+## Canvas の初期化
+
+### `setupCanvas(parent)`
+
+PIXI Application を初期化して DOM に追加します。
+
+```ts
+const app = await setupCanvas(document.body);
+```
+
+---
+
+## PSD の読み込みと描画
+
+### `walkPSD(url, visible?)`
+
+PSD ファイルを取得してレイヤーを再帰的に走査し、末端レイヤーをフラットな `PSDIndex[]` として返します。
 
 ```ts
 const layers = await walkPSD("/models/character.psd");
+```
+
+`visible` オプションでロード時にレイヤーの表示状態を上書きできます。
+
+```ts
+const layers = await walkPSD("/models/character.psd", {
+  show: psdGroup("衣装A"),
+  hide: psdGroup("衣装B"),
+});
+```
+
+#### `PSDIndex`
+
+| プロパティ | 型 | 説明 |
+|---|---|---|
+| `name` | `string` | レイヤー名 |
+| `path` | `string[]` | ルートからのパス |
+| `canvas` | `HTMLCanvasElement` | ag-psd が生成したキャンバス |
+| `x`, `y` | `number` | レイヤーの左上座標 |
+| `clipping` | `boolean` | クリッピングマスク対象か |
+| `hidden` | `boolean` | 非表示レイヤーか |
+
+### `drawCharacter(layers)`
+
+`PSDIndex[]` から PIXI スプライト (`SpriteNode[]`) を生成して返します。各スプライトは `PIXI.MeshPlane` で作られており、頂点変形が可能です。
+
+```ts
 const nodes = drawCharacter(layers);
+for (const node of nodes) {
+  app.stage.addChild(node.container);
+}
 ```
 
-### GroupMatcher - レイヤーの絞り込み
+#### `SpriteNode`
 
-`GroupMatcher` はノードを受け取って `boolean` を返す関数型です。
-名前やパスでレイヤーを絞り込む際に使います。
+| プロパティ | 型 | 説明 |
+|---|---|---|
+| `name` | `string` | レイヤー名 |
+| `path` | `string[]` | ルートからのパス |
+| `container` | `PIXI.Container` | スプライトを包む Container |
+| `sprite` | `PIXI.MeshPlane` | メッシュ変形可能なスプライト本体 |
+
+---
+
+## レイヤーの絞り込み (GroupMatcher)
+
+`GroupMatcher` はノードを受け取って `boolean` を返す関数型です。`groupNodes` や `walkPSD` の絞り込み条件として使います。
+
+### `byName(name)`
+
+レイヤー名が完全一致するノードにマッチします。
 
 ```ts
-psdGroup("前髪")           // パスに "前髪" を含む全レイヤー
-byName("目_デフォルト")     // 名前が完全一致するレイヤー
-byPath(["顔", "眉"])        // パスの末尾が ["顔", "眉"] のレイヤー
-pipe(matcherA, matcherB)   // いずれかにマッチするレイヤー
+byName("目_デフォルト")
 ```
 
-`walkPSD` の `show` / `hide` オプションに渡すと、ロード時点でレイヤーの表示状態を上書きできます。
-これにより、髪型や衣装などのバリエーション切り替えをレイヤー構造で管理できます。
+### `byPath(path)`
 
-### KokoroGroup - まとめて操作
-
-`groupNodes` で絞り込んだノード群を `KokoroGroup` にまとめると、`x`, `y`, `visible`, `alpha` などのプロパティを一括で操作できます。
-
-### KokoroRig - メッシュ変形
-
-`KokoroRig` はキャラクターの骨格的な変形を担います。
-毎フレーム、各頂点を UV 座標 (u, v) に正規化してから `PoseTransform` 関数を呼び出し、平行移動 (tx, ty) および回転 (rot, pivot) を計算して頂点バッファに書き戻します。
-変形の強さは頂点の位置によって連続的に変化するため、ボーンを使わずにソフトボディ的な動きを実現できます。
+パスの末尾が指定した配列と一致するノードにマッチします。
 
 ```ts
-const timer = new RigTimer();
-const blender = new PoseBlender(POSE_TEMPLATE, timer);
+byPath(["顔", "眉"])  // path が [..., "顔", "眉"] で終わるノード
+```
+
+### `psdGroup(groupName, negative?)`
+
+指定したグループ名をパスに含むノードにマッチします。`negative` に指定したグループ名を含むノードは除外されます。
+
+```ts
+psdGroup("前髪")                    // "前髪" を含む全レイヤー
+psdGroup("髪", ["前髪", "横髪"])    // "髪" を含むが "前髪" "横髪" を含まないレイヤー
+```
+
+### `pipe(...matchers)`
+
+複数の `GroupMatcher` を結合します。いずれか1つでも `true` を返せばマッチとみなします。
+
+```ts
+pipe(byName("目_閉じ"), psdGroup("まつ毛"))
+```
+
+---
+
+## KokoroGroup - まとめて操作
+
+### `groupNodes(nodes, matcher)`
+
+`GroupMatcher` でフィルタしたノードを `KokoroGroup` にまとめます。プロパティを変更すると全ノードの Container に一括反映されます。
+
+```ts
+const hair = groupNodes(nodes, psdGroup("前髪"));
+hair.visible = false;
+hair.alpha = 0.5;
+hair.x = 10;
+```
+
+#### `KokoroGroup` プロパティ
+
+| プロパティ | 型 | 説明 |
+|---|---|---|
+| `nodes` | `SpriteNode[]` | グループに含まれるノード一覧 |
+| `x` | `number` | 全ノードの X 座標 |
+| `y` | `number` | 全ノードの Y 座標 |
+| `alpha` | `number` | 全ノードのアルファ値 |
+| `visible` | `boolean` | 全ノードの表示状態 |
+| `scaleX` | `number` | 全ノードの X スケール |
+| `scaleY` | `number` | 全ノードの Y スケール |
+
+---
+
+## KokoroRig - メッシュ変形
+
+`KokoroRig` はキャラクターの頂点を毎フレーム書き換えることでソフトボディ的な変形を実現するクラスです。各頂点を UV 座標 (u, v) に正規化してから `PoseTransform` を呼び出し、平行移動と回転を計算して頂点バッファに書き戻します。
+
+```ts
 const rig = new KokoroRig(nodes);
+```
 
-// 毎フレーム setPose と tick を呼びます
+`parent` オプションで親リグを指定すると、親の `activeTransform` が子の変形に加算されます。体幹リグを親にして髪や腕に子リグを作ると、体幹の動きを受け継ぎながら部位ごとの独立した揺れを加えられます。
+
+```ts
+const bodyRig = new KokoroRig(bodyNodes);
+const hairRig = new KokoroRig(hairNodes, { parent: bodyRig });
+```
+
+### `setPose(transforms)`
+
+次フレームから適用するポーズをセットします。複数渡した場合はウェイト加算で合成されます。
+
+```ts
+rig.setPose([
+  blender.lerp("left", "right", mouseX),
+  blender.lerp("up", "down", mouseY),
+]);
+```
+
+### `tick(time)`
+
+毎フレーム呼び出して頂点変形を適用します。
+
+```ts
 app.ticker.add((ticker) => {
-  rig.setPose([
-    blender.lerp("left", "right", mouseX), // 2 つのポーズを補間
-    blender.lerp("up", "down", mouseY),
-  ]);
-  timer.tick(ticker.deltaTime);
   rig.tick(timer.time);
 });
 ```
 
-#### Template と PoseTransform
+#### `KokoroRig` のバウンディングボックス
 
-`Template` はポーズ名をキーとする `PoseTransform` の辞書です。
-`PoseTransform` は `(u, v, t) => Transform` のシグネチャを持ち、頂点ごとの変形量を返す関数です。
+コンストラクタ内でノード群の AABB が計算されます。
 
-`Transform` のフィールド:
+| プロパティ | 説明 |
+|---|---|
+| `minX`, `minY` | バウンディングボックスの左上座標 |
+| `w`, `h` | バウンディングボックスの幅と高さ |
 
-- `tx`, `ty` : 平行移動量 (ピクセル)
-- `w` : ウェイト (0~1)。複数のポーズが合成される際のブレンド比率
-- `rot` (省略可) : 回転量 (ラジアン)
-- `pivot` (省略可) : 回転の起点 (UV座標)。`rot` と合わせて指定する
+---
+
+## Template と PoseTransform
+
+`Template` はポーズ名をキーとする `PoseTransform` の辞書です。`PoseTransform` は `(u, v, t) => Transform` のシグネチャを持ち、頂点ごとの変形量を返す関数です。
+
+#### `Transform` フィールド
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| `tx`, `ty` | `number` | 平行移動量 (ピクセル) |
+| `w` | `number` | ウェイト (0~1) |
+| `rot` | `number` (省略可) | 回転量 (ラジアン) |
+| `pivot` | `{ u, v }` (省略可) | 回転の起点 (UV 座標)。`rot` と合わせて指定する |
 
 ```ts
 const MY_TEMPLATE: Template = {
   left: (u, v) => {
     const { fromTop } = getSpatialParams(u, v);
-    return {
-      tx: -100,
-      ty: 0,
-      w: curve.body(fromTop),
-    };
+    return { tx: -100, ty: 0, w: curve.body(fromTop) };
   },
   tilt: (u, v) => {
     const { fromTop } = getSpatialParams(u, v);
-    return {
-      tx: 0,
-      ty: 0,
-      w: curve.body(fromTop),
-      rot: 0.2,
-      pivot: { u: 0.5, v: 1.0 },
-    };
+    return { tx: 0, ty: 0, w: curve.body(fromTop), rot: 0.2, pivot: { u: 0.5, v: 1.0 } };
   },
 };
 ```
 
-`curve` にはイージング関数が収録されており、`getSpatialParams` で得た UV 由来の値をウェイトへ変換する際に使います。
+---
 
-#### 親リグの継承
+## getSpatialParams と curve
 
-`parent` オプションで親リグを指定すると、親の `activeTransform` が子の変形に加算されます。
-体幹リグを親にして髪や腕に子リグを作ると、体幹の動きを受け継ぎながら部位ごとの独立した揺れを加えられます。
+### `getSpatialParams(u, v)`
 
-### KokoroFace - 表情制御
+UV 座標から頂点の空間的な位置パラメータを返します。`PoseTransform` 内でウェイト計算に使います。
 
-`KokoroFace` はレイヤーの表示 / 非表示の組み合わせで表情を管理するクラスです。
-`apply` にレイヤー名と真偽値のマップを渡すと、対応するグループの `visible` が一括で切り替わります。
+| 戻り値フィールド | 説明 |
+|---|---|
+| `fromTop` | 上端からの距離 (0=上, 1=下) |
+| `fromBottom` | 下端からの距離 (0=下, 1=上) |
+| `fromLeft` | 左端からの距離 |
+| `fromCenterX` | 中心 X からのオフセット (-0.5~0.5) |
+| `fromCenterY` | 中心 Y からの距離 (0=中心, 1=端) |
+| `isUpperBody` | 上半身か否か |
+
+### `curve`
+
+部位ごとのイージング関数の辞書です。`getSpatialParams` で得た値をウェイトへ変換する際に使います。
+
+| キー | イージング |
+|---|---|
+| `body` | power1.in |
+| `upperBody` | power2.in |
+| `head` | power3.in |
+| `hair` | power4.in |
+| `arm` | カスタム (腕向け) |
+| `chest` | カスタム (胸向け) |
 
 ```ts
-const face = new KokoroFace(nodes, ["*閉じ", "*あ半"]);
-
-face.apply({ "*閉じ": true, "*あ半": false }); // 目を閉じる
+const { fromTop } = getSpatialParams(u, v);
+return { tx: -50, ty: 0, w: curve.hair(fromTop) };
 ```
+
+---
+
+## RigTimer - 時間管理
+
+`RigTimer` は経過時間を管理するタイマーです。`speed` を変えることでパーツごとに独立した時間軸を持てます。
+
+```ts
+const timer = new RigTimer(1.0);  // speed=1.0 がデフォルト
+
+app.ticker.add((ticker) => {
+  timer.tick(ticker.deltaTime);
+  rig.tick(timer.time);
+});
+```
+
+| プロパティ / メソッド | 説明 |
+|---|---|
+| `time` | 現在の経過時間 |
+| `speed` | 時間の進む速さ |
+| `tick(deltaTime)` | 時間を進める |
+
+---
+
+## PoseBlender - ポーズの補間
+
+`Template` と `RigTimer` を受け取り、2つのポーズを線形補間した `PoseTransform` を返します。
+
+```ts
+const blender = new PoseBlender(MY_TEMPLATE, timer);
+
+rig.setPose([
+  blender.lerp("left", "right", mouseX),  // mouseX: 0~1
+]);
+```
+
+### `lerp(from, to, t)`
+
+`from` ポーズと `to` ポーズを `t` (0~1) で線形補間した `PoseTransform` を返します。
+
+---
+
+## RigGroup - 一括 tick
+
+複数の `KokoroRig` と `RigTimer` を束ねて一括で `tick` するクラスです。
+
+```ts
+const group = new RigGroup();
+group.add(bodyRig, timer);
+group.add(hairRig, timer);
+
+app.ticker.add((ticker) => {
+  rig.setPose([...]);
+  group.tick(ticker.deltaTime);  // 全タイマーと全リグを一括更新
+});
+```
+
+同じ `RigTimer` インスタンスを複数のリグに使い回した場合、タイマーは1回だけ進みます。
+
+---
+
+## KokoroFace - 表情制御
+
+`KokoroFace` はレイヤーの表示 / 非表示の組み合わせで表情を管理するクラスです。
+
+```ts
+const face = new KokoroFace(nodes, ["目_閉じ", "口_あ"]);
+
+face.apply({ "目_閉じ": true, "口_あ": false });  // 目を閉じる
+```
+
+コンストラクタに渡したレイヤー名ごとに `psdGroup` でグループが作成され、`apply` で一括切り替えします。
