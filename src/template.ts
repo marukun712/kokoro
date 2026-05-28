@@ -7,7 +7,7 @@ export const POSE_TEMPLATE: Template = {
 		// ベースの移動量
 		const baseTx = -150;
 		// 横向きっぽい視差のため、中心のメッシュを追加で引き伸ばす
-		const center = Math.sin(fromLeft * Math.PI) * 30;
+		const center = Math.sin(fromLeft * Math.PI) * 15;
 		const fakeParallax = -10 * center;
 
 		return {
@@ -20,7 +20,7 @@ export const POSE_TEMPLATE: Template = {
 		const { fromLeft, fromTop } = getSpatialParams(u, v);
 		const w = curve.body(fromTop);
 		const baseTx = 150;
-		const center = Math.sin(fromLeft * Math.PI) * 30;
+		const center = Math.sin(fromLeft * Math.PI) * 15;
 		const fakeParallax = 10 * center;
 
 		return {
