@@ -64,6 +64,7 @@ export class KokoroRig {
 	/** 現フレームに適用する変形関数リスト */
 	public activeTransform: PoseTransform[] = [];
 	private readonly parent?: KokoroRig;
+	private lastTime = 0;
 
 	/**
 	 * @param nodes   - 変形対象の {@link SpriteNode} 配列
@@ -158,6 +159,7 @@ export class KokoroRig {
 
 	/** 毎フレーム呼ばれる頂点変形処理 */
 	public tick(time: number): void {
+		this.lastTime = time;
 		const total = this.origVerts.length / 2;
 
 		for (let vi = 0; vi < total; vi++) {
@@ -174,9 +176,20 @@ export class KokoroRig {
 				const pu = (gx - this.parent.minX) / this.parent.w;
 				const pv = (gy - this.parent.minY) / this.parent.h;
 				for (const field of this.parent.activeTransform) {
-					const tr = field(pu, pv, time);
-					totalTx += tr.tx * tr.w;
-					totalTy += tr.ty * tr.w;
+					const tr = field(pu, pv, this.parent.lastTime);
+					if (tr.rot !== undefined && tr.pivot !== undefined) {
+						const px = this.parent.minX + tr.pivot.u * this.parent.w;
+						const py = this.parent.minY + tr.pivot.v * this.parent.h;
+						const dx = gx - px;
+						const dy = gy - py;
+						const cos = Math.cos(tr.rot * tr.w);
+						const sin = Math.sin(tr.rot * tr.w);
+						totalTx += dx * cos - dy * sin - dx + tr.tx * tr.w;
+						totalTy += dx * sin + dy * cos - dy + tr.ty * tr.w;
+					} else {
+						totalTx += tr.tx * tr.w;
+						totalTy += tr.ty * tr.w;
+					}
 				}
 			}
 

@@ -6,17 +6,23 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.zinc.min.css">
-  <title>kokoro demos</title>
+  <title>kokoro - template</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+    }
+  </style>
 </head>
 
 <body>
-  <main class="container">
-    <h1>kokoro demo</h1>
-    <ul>
-      <li><a href="/template.html">template - テンプレートアニメーション</a></li>
-      <li><a href="/audio.html">audio - 音楽リアクティブアニメーション</a></li>
-    </ul>
-  </main>
+  <script type="module" src="/src/main.ts"></script>
 </body>
 
 </html>

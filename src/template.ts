@@ -34,7 +34,7 @@ export const POSE_TEMPLATE: Template = {
 		const w = curve.body(fromTop);
 		return {
 			tx: 0,
-			ty: -150,
+			ty: -50,
 			w: w,
 		};
 	},
@@ -43,7 +43,7 @@ export const POSE_TEMPLATE: Template = {
 		const w = curve.body(fromTop);
 		return {
 			tx: 0,
-			ty: 0,
+			ty: 50,
 			w: w,
 		};
 	},
