@@ -74,6 +74,8 @@ const {
 	armTimer,
 	bodyBlender,
 	faceBlender,
+	hairFrontBlender,
+	hairBackBlender,
 } = await createCharacter(app);
 viewport.addChild(root);
 
@@ -120,9 +122,18 @@ app.ticker.add(() => {
 		faceBlender.lerp("up", "down", params.y),
 	]);
 
-	rigs.hairFront.setPose([HAIR_TEMPLATE.swing]);
-	rigs.hairSide.setPose([HAIR_TEMPLATE.swing]);
-	rigs.hairBack.setPose([HAIR_TEMPLATE.swing]);
+	rigs.hairFront.setPose([
+		HAIR_TEMPLATE.swing,
+		hairFrontBlender.lerp("leftFront", "rightFront", params.x),
+	]);
+	rigs.hairSide.setPose([
+		HAIR_TEMPLATE.swing,
+		hairBackBlender.lerp("leftBack", "rightBack", params.x),
+	]);
+	rigs.hairBack.setPose([
+		HAIR_TEMPLATE.swing,
+		hairBackBlender.lerp("leftBack", "rightBack", params.x),
+	]);
 
 	const armPose = (sign: number) => (_u: number, _v: number) => ({
 		tx: 0,

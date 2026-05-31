@@ -9,7 +9,7 @@ import {
 } from "@kokoro/rig";
 import type { Application } from "pixi.js";
 import { Container } from "pixi.js";
-import { FACE_TEMPLATE, POSE_TEMPLATE } from "./template";
+import { FACE_TEMPLATE, HAIR_TEMPLATE, POSE_TEMPLATE } from "./template";
 
 export async function createCharacter(app: Application) {
 	const index = await walkPSD("/models/character.psd", {
@@ -39,6 +39,8 @@ export async function createCharacter(app: Application) {
 	};
 
 	const faceBlender = new PoseBlender(FACE_TEMPLATE, timer);
+	const hairFrontBlender = new PoseBlender(HAIR_TEMPLATE, hairTimer);
+	const hairBackBlender = new PoseBlender(HAIR_TEMPLATE, hairTimer);
 
 	return {
 		root,
@@ -50,5 +52,7 @@ export async function createCharacter(app: Application) {
 		armTimer,
 		bodyBlender,
 		faceBlender,
+		hairFrontBlender,
+		hairBackBlender,
 	};
 }
