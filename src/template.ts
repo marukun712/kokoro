@@ -1,50 +1,50 @@
-import { curve, getSpatialParams, type Template } from "@kokoro/rig";
+import {
+	type Curve,
+	curve,
+	getSpatialParams,
+	type Template,
+} from "@kokoro/rig";
 
 export const POSE_TEMPLATE: Template = {
 	left: (u, v) => {
-		const { fromLeft, fromTop } = getSpatialParams(u, v);
-		const w = curve.body(fromTop);
-		// ベースの移動量
-		const baseTx = -150;
-		// 横向きっぽい視差のため、中心のメッシュを追加で引き伸ばす
-		const center = Math.sin(fromLeft * Math.PI) * 15;
-		const fakeParallax = -10 * center;
+		const { fromTop } = getSpatialParams(u, v);
+		const w = curve.power2(fromTop);
 
 		return {
-			tx: baseTx + fakeParallax,
+			tx: -100 * w,
 			ty: 0,
-			w: w,
 		};
 	},
+
 	right: (u, v) => {
-		const { fromLeft, fromTop } = getSpatialParams(u, v);
-		const w = curve.body(fromTop);
-		const baseTx = 150;
-		const center = Math.sin(fromLeft * Math.PI) * 15;
-		const fakeParallax = 10 * center;
+		const { fromTop } = getSpatialParams(u, v);
+		const w = curve.power2(fromTop);
 
 		return {
-			tx: baseTx + fakeParallax,
+			tx: 100 * w,
 			ty: 0,
-			w: w,
 		};
 	},
+
 	up: (u, v) => {
 		const { fromTop } = getSpatialParams(u, v);
-		const w = curve.body(fromTop);
+		const chestCurve: Curve = (t: number) => Math.sin(t * Math.PI);
+		const w = chestCurve(fromTop);
+
 		return {
 			tx: 0,
-			ty: -50,
-			w: w,
+			ty: -40 * w,
 		};
 	},
+
 	down: (u, v) => {
 		const { fromTop } = getSpatialParams(u, v);
-		const w = curve.body(fromTop);
+		const chestCurve: Curve = (t: number) => Math.sin(t * Math.PI);
+		const w = chestCurve(fromTop);
+
 		return {
 			tx: 0,
-			ty: 50,
-			w: w,
+			ty: 40 * w,
 		};
 	},
 };
@@ -52,66 +52,110 @@ export const POSE_TEMPLATE: Template = {
 export const HAIR_TEMPLATE: Template = {
 	swing: (u, v, t) => {
 		const { fromBottom } = getSpatialParams(u, v);
-		// sin揺れ
 		const swing = Math.sin(t * 0.05);
+		const w = curve.power1(fromBottom);
+
 		return {
 			tx: 0,
 			ty: 0,
-			rot: 0.05 * swing,
+			rot: 0.05 * swing * w,
 			pivot: { u: 0.5, v: 0.0 },
-			w: curve.body(fromBottom),
 		};
 	},
-	// 移動量に差をつけることで視差をつくる
+
 	leftFront: (u, v) => {
 		const { fromBottom } = getSpatialParams(u, v);
-		return { tx: -20, ty: 0, w: curve.body(fromBottom) };
+		const w = curve.power1(fromBottom);
+
+		return {
+			tx: -20 * w,
+			ty: 0,
+		};
 	},
+
 	rightFront: (u, v) => {
 		const { fromBottom } = getSpatialParams(u, v);
-		return { tx: 20, ty: 0, w: curve.body(fromBottom) };
+		const w = curve.power1(fromBottom);
+
+		return {
+			tx: 20 * w,
+			ty: 0,
+		};
 	},
+
 	leftBack: (u, v) => {
 		const { fromBottom } = getSpatialParams(u, v);
-		return { tx: 10, ty: 0, w: curve.body(fromBottom) };
+		const w = curve.power1(fromBottom);
+
+		return {
+			tx: 10 * w,
+			ty: 0,
+		};
 	},
+
 	rightBack: (u, v) => {
 		const { fromBottom } = getSpatialParams(u, v);
-		return { tx: -10, ty: 0, w: curve.body(fromBottom) };
+		const w = curve.power1(fromBottom);
+
+		return {
+			tx: -10 * w,
+			ty: 0,
+		};
 	},
 };
 
 export const SWING_TEMPLATE: Template = {
 	swing: (u, v, t) => {
 		const { fromBottom } = getSpatialParams(u, v);
-		// sin揺れ
 		const swing = Math.sin(t * 0.05);
-		const w = curve.arm(fromBottom);
+		const armCurve: Curve = (t: number) => t ** 0.5;
+		const w = armCurve(fromBottom);
+
 		return {
 			tx: 0,
 			ty: 0,
-			rot: 0.02 * swing,
+			rot: 0.05 * swing * w,
 			pivot: { u: 0.5, v: 0.0 },
-			w: w,
 		};
 	},
 };
 
-export const EYE_TEMPLATE: Template = {
+export const FACE_TEMPLATE: Template = {
 	left: (u, v) => {
-		const { fromLeft } = getSpatialParams(u, v);
-		return { tx: -10, ty: 0, w: fromLeft };
+		const { fromLeft, fromRight } = getSpatialParams(u, v);
+		const skew: Curve = (t: number) => t;
+
+		return {
+			tx: -30 * skew(fromRight) + 15 * skew(fromLeft),
+			ty: 0,
+		};
 	},
+
 	right: (u, v) => {
-		const { fromLeft } = getSpatialParams(u, v);
-		return { tx: 10, ty: 0, w: fromLeft };
+		const { fromLeft, fromRight } = getSpatialParams(u, v);
+		const skew: Curve = (t: number) => t;
+
+		return {
+			tx: 30 * skew(fromLeft) - 15 * skew(fromRight),
+			ty: 0,
+		};
 	},
+
 	up: (u, v) => {
 		const { fromTop } = getSpatialParams(u, v);
-		return { tx: 0, ty: 5, w: fromTop };
+
+		return {
+			tx: 0,
+			ty: -20 * curve.power1(fromTop),
+		};
 	},
+
 	down: (u, v) => {
 		const { fromBottom } = getSpatialParams(u, v);
-		return { tx: 0, ty: -5, w: fromBottom };
+
+		return {
+			tx: 0,
+			ty: 20 * curve.power1(fromBottom),
+		};
 	},
 };

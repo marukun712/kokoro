@@ -52,7 +52,7 @@ export async function walkPSD(
 	const psd = readPsd(await res.arrayBuffer());
 	const result: PSDIndex[] = [];
 
-	function walk(layer: Layer, path: string[]) {
+	function walk(layer: Layer, path: string[], parentHidden: boolean) {
 		if (!layer.name) return;
 		const nextPath = [...path, layer.name];
 		const node = { name: layer.name, path: nextPath };
@@ -63,8 +63,10 @@ export async function walkPSD(
 			return hidden;
 		}
 
+		const hidden = resolveVisible((layer.hidden ?? false) || parentHidden);
+
 		if (layer.children) {
-			for (const child of layer.children) walk(child, nextPath);
+			for (const child of layer.children) walk(child, nextPath, hidden);
 		} else if (layer.canvas) {
 			result.push({
 				name: layer.name,
@@ -73,13 +75,13 @@ export async function walkPSD(
 				x: layer.left ?? 0,
 				y: layer.top ?? 0,
 				clipping: layer.clipping ?? false,
-				hidden: resolveVisible(layer.hidden ?? false),
+				hidden,
 			});
 		}
 	}
 
 	psd.children?.forEach((l) => {
-		walk(l, []);
+		walk(l, [], false);
 	});
 	return result;
 }

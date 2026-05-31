@@ -1,29 +1,18 @@
-import gsap from "gsap";
-import { CustomEase } from "gsap/CustomEase";
+/** UV -> 変形量のイージング関数 */
+export type Curve = (t: number) => number;
 
-/** UV -> 変形量のイージング関数を格納する辞書型 */
-type Curve = Record<
-	"body" | "upperBody" | "head" | "hair" | "arm" | "chest",
-	(t: number) => number
->;
+/** ポーズを適用する範囲のガード型 */
+export type Guard = (t: number) => boolean;
 
 /**
  * キャラクター各部位の変形量を UV 座標から決定するイージング関数群
  */
-export const curve: Curve = {
-	body: gsap.parseEase("power1.in"),
-	upperBody: gsap.parseEase("power2.in"),
-	head: gsap.parseEase("power3.in"),
-	hair: gsap.parseEase("power4.in"),
-	arm: gsap.parseEase(
-		CustomEase.create(
-			"custom",
-			"M0,0 C0.081,0.464 0.091,0.75 0.199,0.88 0.281,0.979 1,1 1,1 ",
-		),
-	),
-	chest: gsap.parseEase(
-		CustomEase.create("custom", "M0,0 C0.35,0 0.55,1 0.6,1 0.7,1 0.8,0 1,0"),
-	),
+export const curve = {
+	power1: (t: number) => t,
+	power2: (t: number) => t ** 2,
+	power3: (t: number) => t ** 3,
+	power4: (t: number) => t ** 4,
+	arm: (t: number) => t ** 0.5,
 } as const;
 
 /** {@link getSpatialParams} の戻り値 */
@@ -31,6 +20,7 @@ export interface SpatialParams {
 	fromTop: number;
 	fromBottom: number;
 	fromLeft: number;
+	fromRight: number;
 	fromCenterX: number;
 	fromCenterY: number;
 	isUpperBody: boolean;
@@ -48,6 +38,7 @@ export function getSpatialParams(u: number, v: number): SpatialParams {
 		fromTop: 1 - v,
 		fromBottom: v,
 		fromLeft: u,
+		fromRight: 1 - u,
 		fromCenterX: u - 0.5,
 		fromCenterY: Math.abs(0.5 - v) * 2,
 		isUpperBody: v < 0.5,

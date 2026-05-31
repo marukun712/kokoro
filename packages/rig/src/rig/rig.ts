@@ -6,8 +6,6 @@ export interface Transform {
 	tx: number;
 	/** Y 方向の平行移動量 (ピクセル) */
 	ty: number;
-	/** この変形のウェイト(0~1) */
-	w: number;
 	/** 回転量 (ラジアン) */
 	rot?: number;
 	/** 回転の起点 (UV座標) */
@@ -63,8 +61,8 @@ export class KokoroRig {
 
 	/** 現フレームに適用する変形関数リスト */
 	public activeTransform: PoseTransform[] = [];
+	private lastTime: number = 0;
 	private readonly parent?: KokoroRig;
-	private lastTime = 0;
 
 	/**
 	 * @param nodes   - 変形対象の {@link SpriteNode} 配列
@@ -182,13 +180,13 @@ export class KokoroRig {
 						const py = this.parent.minY + tr.pivot.v * this.parent.h;
 						const dx = gx - px;
 						const dy = gy - py;
-						const cos = Math.cos(tr.rot * tr.w);
-						const sin = Math.sin(tr.rot * tr.w);
-						totalTx += dx * cos - dy * sin - dx + tr.tx * tr.w;
-						totalTy += dx * sin + dy * cos - dy + tr.ty * tr.w;
+						const cos = Math.cos(tr.rot);
+						const sin = Math.sin(tr.rot);
+						totalTx += dx * cos - dy * sin - dx + tr.tx;
+						totalTy += dx * sin + dy * cos - dy + tr.ty;
 					} else {
-						totalTx += tr.tx * tr.w;
-						totalTy += tr.ty * tr.w;
+						totalTx += tr.tx;
+						totalTy += tr.ty;
 					}
 				}
 			}
@@ -200,13 +198,13 @@ export class KokoroRig {
 					const py = this.minY + tr.pivot.v * this.h;
 					const dx = gx - px;
 					const dy = gy - py;
-					const cos = Math.cos(tr.rot * tr.w);
-					const sin = Math.sin(tr.rot * tr.w);
-					totalTx += dx * cos - dy * sin - dx + tr.tx * tr.w;
-					totalTy += dx * sin + dy * cos - dy + tr.ty * tr.w;
+					const cos = Math.cos(tr.rot);
+					const sin = Math.sin(tr.rot);
+					totalTx += dx * cos - dy * sin - dx + tr.tx;
+					totalTy += dx * sin + dy * cos - dy + tr.ty;
 				} else {
-					totalTx += tr.tx * tr.w;
-					totalTy += tr.ty * tr.w;
+					totalTx += tr.tx;
+					totalTy += tr.ty;
 				}
 			}
 
