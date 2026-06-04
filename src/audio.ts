@@ -1,4 +1,4 @@
-import { setupCanvas } from "@kokoro/rig";
+import { curve, getSpatialParams, setupCanvas } from "@kokoro/rig";
 import gsap from "gsap";
 import { Viewport } from "pixi-viewport";
 import * as Tone from "tone";
@@ -114,7 +114,11 @@ app.ticker.add(() => {
 	rig.setPose([
 		bodyBlender.lerp("left", "right", params.x),
 		bodyBlender.lerp("up", "down", params.y),
-		() => ({ tx: 0, ty: low * 500 }),
+		(u, v) => {
+			const { fromTop } = getSpatialParams(u, v);
+			const w = curve.power2(fromTop);
+			return { tx: 0, ty: low * 100 * w };
+		},
 	]);
 
 	rigs.face.setPose([

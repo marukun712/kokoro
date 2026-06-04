@@ -28,10 +28,30 @@ export class PoseBlender {
 		return (u, v) => {
 			const ta = a(u, v, this.timer.time);
 			const tb = b(u, v, this.timer.time);
-			return {
-				tx: ta.tx + (tb.tx - ta.tx) * t,
-				ty: ta.ty + (tb.ty - ta.ty) * t,
-			};
+
+			const tx = ta.tx + (tb.tx - ta.tx) * t;
+			const ty = ta.ty + (tb.ty - ta.ty) * t;
+
+			const rotA = ta.rot ?? 0;
+			const rotB = tb.rot ?? 0;
+			const rot = rotA + (rotB - rotA) * t;
+
+			const pivotA = ta.pivot ?? tb.pivot;
+			const pivotB = tb.pivot ?? ta.pivot;
+
+			if (pivotA && pivotB) {
+				return {
+					tx,
+					ty,
+					rot,
+					pivot: {
+						u: pivotA.u + (pivotB.u - pivotA.u) * t,
+						v: pivotA.v + (pivotB.v - pivotA.v) * t,
+					},
+				};
+			}
+
+			return { tx, ty };
 		};
 	}
 }

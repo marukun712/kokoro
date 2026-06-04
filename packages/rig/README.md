@@ -194,19 +194,17 @@ app.ticker.add((ticker) => {
 | フィールド | 型 | 説明 |
 |---|---|---|
 | `tx`, `ty` | `number` | 平行移動量 (ピクセル) |
-| `w` | `number` | ウェイト (0~1) |
 | `rot` | `number` (省略可) | 回転量 (ラジアン) |
 | `pivot` | `{ u, v }` (省略可) | 回転の起点 (UV 座標)。`rot` と合わせて指定する |
 
 ```ts
 const MY_TEMPLATE: Template = {
   left: (u, v) => {
-    const { fromTop } = getSpatialParams(u, v);
-    return { tx: -100, ty: 0, w: curve.body(fromTop) };
+    const { fromBottom } = getSpatialParams(u, v);
+    return { tx: -100, ty: 0 };
   },
   tilt: (u, v) => {
-    const { fromTop } = getSpatialParams(u, v);
-    return { tx: 0, ty: 0, w: curve.body(fromTop), rot: 0.2, pivot: { u: 0.5, v: 1.0 } };
+    return { tx: 0, ty: 0, rot: 0.2, pivot: { u: 0.5, v: 1.0 } };
   },
 };
 ```
@@ -221,51 +219,49 @@ UV 座標から頂点の空間的な位置パラメータを返します。`Pose
 
 | 戻り値フィールド | 説明 |
 |---|---|
-| `fromTop` | 上端からの距離 (0=上, 1=下) |
-| `fromBottom` | 下端からの距離 (0=下, 1=上) |
-| `fromLeft` | 左端からの距離 |
+| `fromTop` | 上端に近いほど大きい値 (0=下, 1=上)。`1 - v` |
+| `fromBottom` | 下端に近いほど大きい値 (0=上, 1=下)。`v` |
+| `fromLeft` | 左端からの距離 (0=左, 1=右) |
+| `fromRight` | 右端からの距離 (0=右, 1=左) |
 | `fromCenterX` | 中心 X からのオフセット (-0.5~0.5) |
 | `fromCenterY` | 中心 Y からの距離 (0=中心, 1=端) |
-| `isUpperBody` | 上半身か否か |
+| `isUpperBody` | 上半身か否か (v < 0.5) |
 
 ### `curve`
 
-部位ごとのイージング関数の辞書です。`getSpatialParams` で得た値をウェイトへ変換する際に使います。
+イージング関数の辞書です。`getSpatialParams` で得た値をウェイトへ変換する際に使います。
 
 | キー | イージング |
 |---|---|
-| `body` | power1.in |
-| `upperBody` | power2.in |
-| `head` | power3.in |
-| `hair` | power4.in |
-| `arm` | カスタム (腕向け) |
-| `chest` | カスタム (胸向け) |
+| `power1` | 線形 (t) |
+| `power2` | 二乗 (t^2) |
+| `power3` | 三乗 (t^3) |
+| `power4` | 四乗 (t^4) |
+| `arm` | 平方根 (t^0.5、腕向け) |
 
 ```ts
-const { fromTop } = getSpatialParams(u, v);
-return { tx: -50, ty: 0, w: curve.hair(fromTop) };
+const { fromBottom } = getSpatialParams(u, v);
+return { tx: -50, ty: 0 };
 ```
 
 ---
 
 ## RigTimer - 時間管理
 
-`RigTimer` は経過時間を管理するタイマーです。`speed` を変えることでパーツごとに独立した時間軸を持てます。
+`RigTimer` は経過時間を管理するタイマーです。コンストラクタに PIXI の `Ticker` を渡すと自動で時間を蓄積します。`speed` を変えることでパーツごとに独立した時間軸を持てます。
 
 ```ts
-const timer = new RigTimer(1.0);  // speed=1.0 がデフォルト
+const timer = new RigTimer(app.ticker);        // speed=1.0 がデフォルト
+const slowTimer = new RigTimer(app.ticker, 0.5);  // 半速
 
-app.ticker.add((ticker) => {
-  timer.tick(ticker.deltaTime);
+app.ticker.add(() => {
   rig.tick(timer.time);
 });
 ```
 
-| プロパティ / メソッド | 説明 |
+| プロパティ | 説明 |
 |---|---|
 | `time` | 現在の経過時間 |
-| `speed` | 時間の進む速さ |
-| `tick(deltaTime)` | 時間を進める |
 
 ---
 
@@ -284,25 +280,6 @@ rig.setPose([
 ### `lerp(from, to, t)`
 
 `from` ポーズと `to` ポーズを `t` (0~1) で線形補間した `PoseTransform` を返します。
-
----
-
-## RigGroup - 一括 tick
-
-複数の `KokoroRig` と `RigTimer` を束ねて一括で `tick` するクラスです。
-
-```ts
-const group = new RigGroup();
-group.add(bodyRig, timer);
-group.add(hairRig, timer);
-
-app.ticker.add((ticker) => {
-  rig.setPose([...]);
-  group.tick(ticker.deltaTime);  // 全タイマーと全リグを一括更新
-});
-```
-
-同じ `RigTimer` インスタンスを複数のリグに使い回した場合、タイマーは1回だけ進みます。
 
 ---
 
