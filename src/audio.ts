@@ -33,7 +33,7 @@ function readBands() {
 			e = toIdx(hi);
 		let sum = 0;
 		for (let i = s; i < e; i++) sum += buf[i];
-		return sum / ((e - s) * 255);
+		return sum / (e - s);
 	};
 
 	gsap.to(bands, {
@@ -113,7 +113,7 @@ app.ticker.add(() => {
 	const { low, mid, high } =
 		audioCtx.state === "running" ? readBands() : { low: 0, mid: 0, high: 0 };
 
-	if (high > 0.3) {
+	if (high > 255 / 2) {
 		blink();
 	}
 
@@ -123,7 +123,7 @@ app.ticker.add(() => {
 		(u, v) => {
 			const { fromTop } = getSpatialParams(u, v);
 			const w = curve.power2(fromTop);
-			return { tx: 0, ty: low * 100 * w };
+			return { tx: 0, ty: low * w };
 		},
 	]);
 
@@ -136,10 +136,10 @@ app.ticker.add(() => {
 		hairBackBlender.lerp("leftBack", "rightBack", params.x),
 	]);
 
-	const armPose = (sign: number) => (_u: number, _v: number) => ({
+	const armPose = (sign: number) => () => ({
 		tx: 0,
 		ty: 0,
-		rot: sign * mid * 0.1,
+		rot: sign * mid * 0.0005,
 		pivot: { u: 0.5, v: 0 },
 	});
 
