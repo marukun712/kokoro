@@ -25,11 +25,21 @@ const {
 	hairTimer,
 	armTimer,
 	bodyBlender,
-	faceBlender,
 	hairFrontBlender,
 	hairBackBlender,
+	chestBlender,
+	blink,
 } = await createCharacter(app);
 viewport.addChild(root);
+
+function scheduleNextBlink() {
+	const delay = 3000 + Math.random() * 2000;
+	setTimeout(() => {
+		blink();
+		scheduleNextBlink();
+	}, delay);
+}
+scheduleNextBlink();
 
 const params = { x: 0.5, y: 0.5 };
 
@@ -48,34 +58,26 @@ app.ticker.add(() => {
 		bodyBlender.lerp("up", "down", params.y),
 	]);
 
-	rigs.face.setPose([
-		faceBlender.lerp("left", "right", params.x),
-		faceBlender.lerp("up", "down", params.y),
-	]);
-
 	rigs.hairFront.setPose([
 		HAIR_TEMPLATE.swing,
 		hairFrontBlender.lerp("leftFront", "rightFront", params.x),
-	]);
-	rigs.hairSide.setPose([
-		HAIR_TEMPLATE.swing,
-		hairBackBlender.lerp("leftBack", "rightBack", params.x),
 	]);
 	rigs.hairBack.setPose([
 		HAIR_TEMPLATE.swing,
 		hairBackBlender.lerp("leftBack", "rightBack", params.x),
 	]);
 
-	rigs.leftArm.setPose([SWING_TEMPLATE.swing]);
-	rigs.rightArm.setPose([SWING_TEMPLATE.swing]);
+	rigs.frontArm.setPose([SWING_TEMPLATE.swing]);
 
-	for (const r of [rig, rigs.face]) {
+	rigs.chest.setPose([chestBlender.lerp("swing", "swing", 0.5)]);
+
+	for (const r of [rig]) {
 		r.tick(timer.time);
 	}
-	for (const r of [rigs.hairFront, rigs.hairSide, rigs.hairBack]) {
+	for (const r of [rigs.hairFront, rigs.hairBack]) {
 		r.tick(hairTimer.time);
 	}
-	for (const r of [rigs.leftArm, rigs.rightArm]) {
-		r.tick(armTimer.time);
-	}
+
+	rigs.frontArm.tick(armTimer.time);
+	rigs.chest.tick(hairTimer.time);
 });

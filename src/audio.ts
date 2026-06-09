@@ -19,7 +19,7 @@ async function connectCapture(): Promise<void> {
 	audioCtx.createMediaStreamSource(stream).connect(analyser);
 }
 
-const bands = { low: 0, mid: 0 };
+const bands = { low: 0, mid: 0, high: 0 };
 
 function readBands() {
 	const buf = new Uint8Array(analyser.frequencyBinCount);
@@ -39,6 +39,7 @@ function readBands() {
 	gsap.to(bands, {
 		low: avg(60, 250),
 		mid: avg(250, 2000),
+		high: avg(2000, 8000),
 		duration: 0.1,
 		ease: "sine.out",
 	});
@@ -73,9 +74,10 @@ const {
 	hairTimer,
 	armTimer,
 	bodyBlender,
-	faceBlender,
 	hairFrontBlender,
 	hairBackBlender,
+	chestBlender,
+	blink,
 } = await createCharacter(app);
 viewport.addChild(root);
 
@@ -108,8 +110,12 @@ document.getElementById("btn-capture")?.addEventListener(
 );
 
 app.ticker.add(() => {
-	const { low, mid } =
-		audioCtx.state === "running" ? readBands() : { low: 0, mid: 0 };
+	const { low, mid, high } =
+		audioCtx.state === "running" ? readBands() : { low: 0, mid: 0, high: 0 };
+
+	if (high > 0.3) {
+		blink();
+	}
 
 	rig.setPose([
 		bodyBlender.lerp("left", "right", params.x),
@@ -121,18 +127,9 @@ app.ticker.add(() => {
 		},
 	]);
 
-	rigs.face.setPose([
-		faceBlender.lerp("left", "right", params.x),
-		faceBlender.lerp("up", "down", params.y),
-	]);
-
 	rigs.hairFront.setPose([
 		HAIR_TEMPLATE.swing,
 		hairFrontBlender.lerp("leftFront", "rightFront", params.x),
-	]);
-	rigs.hairSide.setPose([
-		HAIR_TEMPLATE.swing,
-		hairBackBlender.lerp("leftBack", "rightBack", params.x),
 	]);
 	rigs.hairBack.setPose([
 		HAIR_TEMPLATE.swing,
@@ -146,16 +143,16 @@ app.ticker.add(() => {
 		pivot: { u: 0.5, v: 0 },
 	});
 
-	rigs.leftArm.setPose([armPose(-1)]);
-	rigs.rightArm.setPose([armPose(1)]);
+	rigs.frontArm.setPose([armPose(-1)]);
 
-	for (const r of [rig, rigs.face]) {
+	rigs.chest.setPose([chestBlender.lerp("swing", "swing", 0.5)]);
+
+	for (const r of [rig]) {
 		r.tick(timer.time);
 	}
-	for (const r of [rigs.hairFront, rigs.hairSide, rigs.hairBack]) {
+	for (const r of [rigs.hairFront, rigs.hairBack]) {
 		r.tick(hairTimer.time);
 	}
-	for (const r of [rigs.leftArm, rigs.rightArm]) {
-		r.tick(armTimer.time);
-	}
+	rigs.frontArm.tick(armTimer.time);
+	rigs.chest.tick(hairTimer.time);
 });

@@ -1,5 +1,6 @@
 import {
 	drawCharacter,
+	KokoroFace,
 	KokoroRig,
 	PoseBlender,
 	pipe,
@@ -9,12 +10,10 @@ import {
 } from "@kokoro/rig";
 import type { Application } from "pixi.js";
 import { Container } from "pixi.js";
-import { FACE_TEMPLATE, HAIR_TEMPLATE, POSE_TEMPLATE } from "./template";
+import { HAIR_TEMPLATE, POSE_TEMPLATE, SWING_TEMPLATE } from "./template";
 
 export async function createCharacter(app: Application) {
-	const index = await walkPSD("/models/character.psd", {
-		hide: pipe(psdGroup("はじめに"), psdGroup("見本_クレジット表記")),
-	});
+	const index = await walkPSD("/minato/character.psd");
 	const nodes = drawCharacter(index);
 	const root = new Container();
 	for (const node of nodes) root.addChild(node.container);
@@ -26,21 +25,28 @@ export async function createCharacter(app: Application) {
 	const armTimer = new RigTimer(app.ticker, 0.6);
 	const bodyBlender = new PoseBlender(POSE_TEMPLATE, timer);
 
-	const faceRig = new KokoroRig(nodes.filter(psdGroup("顔")), { parent: rig });
 	const rigs = {
-		hairFront: new KokoroRig(nodes.filter(psdGroup("前髪")), { parent: rig }),
-		hairSide: new KokoroRig(nodes.filter(psdGroup("前髪サイド")), {
-			parent: rig,
-		}),
-		hairBack: new KokoroRig(nodes.filter(psdGroup("後ろ髪")), { parent: rig }),
-		face: faceRig,
-		leftArm: new KokoroRig(nodes.filter(psdGroup("腕L")), { parent: rig }),
-		rightArm: new KokoroRig(nodes.filter(psdGroup("腕R")), { parent: rig }),
+		hairFront: new KokoroRig(
+			nodes.filter(pipe(psdGroup("!前髪"), psdGroup("前髪上"))),
+			{ parent: rig },
+		),
+		hairBack: new KokoroRig(nodes.filter(psdGroup("!後髪")), { parent: rig }),
+		frontArm: new KokoroRig(nodes.filter(psdGroup("!手前腕")), { parent: rig }),
+		chest: new KokoroRig(nodes.filter(psdGroup("胸装飾")), { parent: rig }),
 	};
 
-	const faceBlender = new PoseBlender(FACE_TEMPLATE, timer);
 	const hairFrontBlender = new PoseBlender(HAIR_TEMPLATE, hairTimer);
 	const hairBackBlender = new PoseBlender(HAIR_TEMPLATE, hairTimer);
+	const chestBlender = new PoseBlender(SWING_TEMPLATE, hairTimer);
+
+	const face = new KokoroFace(nodes, ["*手前", "*閉じ"]);
+
+	function blink() {
+		face.apply({ "*手前": false, "*閉じ": true });
+		setTimeout(() => {
+			face.apply({ "*手前": true, "*閉じ": false });
+		}, 150);
+	}
 
 	return {
 		root,
@@ -51,8 +57,10 @@ export async function createCharacter(app: Application) {
 		hairTimer,
 		armTimer,
 		bodyBlender,
-		faceBlender,
 		hairFrontBlender,
 		hairBackBlender,
+		chestBlender,
+		face,
+		blink,
 	};
 }

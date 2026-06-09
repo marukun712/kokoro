@@ -33,7 +33,7 @@ export const POSE_TEMPLATE: Template = {
 
 		return {
 			tx: 0,
-			ty: -40 * w,
+			ty: -20 * w,
 		};
 	},
 
@@ -44,7 +44,7 @@ export const POSE_TEMPLATE: Template = {
 
 		return {
 			tx: 0,
-			ty: 40 * w,
+			ty: 20 * w,
 		};
 	},
 };
@@ -68,7 +68,7 @@ export const HAIR_TEMPLATE: Template = {
 		const w = curve.power1(fromBottom);
 
 		return {
-			tx: -20 * w,
+			tx: -50 * w,
 			ty: 0,
 		};
 	},
@@ -78,7 +78,7 @@ export const HAIR_TEMPLATE: Template = {
 		const w = curve.power1(fromBottom);
 
 		return {
-			tx: 20 * w,
+			tx: 50 * w,
 			ty: 0,
 		};
 	},
@@ -116,46 +116,6 @@ export const SWING_TEMPLATE: Template = {
 			ty: 0,
 			rot: 0.05 * swing * w,
 			pivot: { u: 0.5, v: 0.0 },
-		};
-	},
-};
-
-export const FACE_TEMPLATE: Template = {
-	left: (u, v) => {
-		const { fromLeft, fromRight } = getSpatialParams(u, v);
-		const skew: Curve = (t: number) => t;
-
-		return {
-			tx: -30 * skew(fromRight) + 15 * skew(fromLeft),
-			ty: 0,
-		};
-	},
-
-	right: (u, v) => {
-		const { fromLeft, fromRight } = getSpatialParams(u, v);
-		const skew: Curve = (t: number) => t;
-
-		return {
-			tx: 30 * skew(fromLeft) - 15 * skew(fromRight),
-			ty: 0,
-		};
-	},
-
-	up: (u, v) => {
-		const { fromTop } = getSpatialParams(u, v);
-
-		return {
-			tx: 0,
-			ty: -20 * curve.power1(fromTop),
-		};
-	},
-
-	down: (u, v) => {
-		const { fromBottom } = getSpatialParams(u, v);
-
-		return {
-			tx: 0,
-			ty: 20 * curve.power1(fromBottom),
 		};
 	},
 };
