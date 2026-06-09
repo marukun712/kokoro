@@ -13,7 +13,7 @@ import { Container } from "pixi.js";
 import { HAIR_TEMPLATE, POSE_TEMPLATE, SWING_TEMPLATE } from "./template";
 
 export async function createCharacter(app: Application) {
-	const index = await walkPSD("/minato/character.psd");
+	const index = await walkPSD("./minato/character.psd");
 	const nodes = drawCharacter(index);
 	const root = new Container();
 	for (const node of nodes) root.addChild(node.container);
