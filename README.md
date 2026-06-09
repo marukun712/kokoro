@@ -8,6 +8,7 @@
 https://github.com/marukun712/kokoro
 
 本デモページでは、以下の立ち絵を使用させていただいております。
+
 https://seiga.nicovideo.jp/seiga/im11114797
 
 ## コンセプト
