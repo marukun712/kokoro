@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.zinc.min.css">
   <title>kokoro - audio</title>
@@ -22,13 +22,14 @@
 </head>
 
 <body>
-  <div style="position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); display: flex; gap: 0.5rem; z-index: 10;">
+  <div
+    style="position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); display: flex; gap: 0.5rem; z-index: 10;">
     <button type="button" id="btn-capture">capture</button>
     <button type="button" id="btn-low">low</button>
     <button type="button" id="btn-mid">mid</button>
     <button type="button" id="btn-high">high</button>
   </div>
-  <script type="module" src="/src/audio.ts"></script>
+  <script type="module" src="./src/audio.ts"></script>
 </body>
 
 </html>
