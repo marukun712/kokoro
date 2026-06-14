@@ -14,6 +14,10 @@ export interface Transform {
 
 export type Pose = (u: number, v: number) => Transform;
 
+/**
+ * ノード群の頂点を毎フレーム書き換えてメッシュ変形を行うクラス。
+ * コンストラクタでバウンディングボックスを計算し、UV 正規化の基準として使う。
+ */
 export class Rig {
 	/** ローカル座標の初期頂点バッファ */
 	private readonly origVerts: Float32Array;
@@ -107,7 +111,12 @@ export class Rig {
 		}
 	}
 
-	/** 毎フレーム呼ばれる頂点変形処理 */
+	/**
+	 * ポーズを合成して頂点変形を適用する。毎フレーム呼び出す。
+	 * 複数のポーズはウェイト加算で合成される。
+	 *
+	 * @param poses - 適用するポーズの配列
+	 */
 	public apply(poses: Pose[]): void {
 		const total = this.origVerts.length / 2;
 

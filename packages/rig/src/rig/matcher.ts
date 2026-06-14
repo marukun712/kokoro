@@ -17,10 +17,19 @@ export interface Group {
 	scaleY: number;
 }
 
+/** `GroupMatcher` が受け取るノードの最小インタフェース */
 export type Matchable = { name: string; path: string[] };
 
+/** ノードを受け取って一致するか返す述語関数 */
 export type GroupMatcher = (node: Matchable) => boolean;
 
+/**
+ * `matcher` に一致するノードをまとめた {@link Group} を返す。
+ * プロパティへの代入は全ノードの Container に一括反映される。
+ *
+ * @param nodes   - 検索対象のノード一覧
+ * @param matcher - 絞り込み条件
+ */
 export function groupNodes(nodes: SpriteNode[], matcher: GroupMatcher): Group {
 	const matched = nodes.filter(matcher);
 	const containers = matched.map((n) => n.container);
@@ -78,21 +87,38 @@ export function groupNodes(nodes: SpriteNode[], matcher: GroupMatcher): Group {
 	};
 }
 
+/** レイヤー名が完全一致するノードにマッチする `GroupMatcher` を返す */
 export function byName(name: string): GroupMatcher {
 	return (n) => n.name === name;
 }
 
+/**
+ * パスの末尾が `path` と一致するノードにマッチする `GroupMatcher` を返す。
+ *
+ * @param path - 末尾と照合するパスセグメントの配列
+ */
 export function byPath(path: string[]): GroupMatcher {
 	return (n) =>
 		path.every((seg, i) => n.path[n.path.length - path.length + i] === seg);
 }
 
+/**
+ * パスに `groupName` を含み、`negative` に含まれるグループ名を持たないノードにマッチする `GroupMatcher` を返す。
+ *
+ * @param groupName - 含む必要があるグループ名
+ * @param negative  - 含んではいけないグループ名の配列
+ */
 export function psdGroup(groupName: string, negative?: string[]): GroupMatcher {
 	return (n) =>
 		n.path.includes(groupName) &&
 		!negative?.some((neg) => n.path.includes(neg));
 }
 
+/**
+ * 複数の `GroupMatcher` を OR 結合する。いずれか1つでも `true` を返せばマッチとみなす。
+ *
+ * @param matchers - 結合するマッチャー
+ */
 export function or(...matchers: GroupMatcher[]): GroupMatcher {
 	return (n) => matchers.some((m) => m(n));
 }
