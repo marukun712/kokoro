@@ -12,35 +12,11 @@ export interface Transform {
 	pivot?: { u: number; v: number };
 }
 
-/**
- * UV 座標と時間から {@link Transform} を返す関数。
- *
- * @param u - 水平方向の正規化座標 (0=左, 1=右)
- * @param v - 垂直方向の正規化座標 (0=上, 1=下)
- * @param t - 経過時間
- */
-export type PoseTransform = (u: number, v: number, t: number) => Transform;
+export type Pose = (u: number, v: number) => Transform;
 
-/**
- * ポーズ名をキーとする {@link PoseTransform} の辞書。
- * {@link PoseBlender.lerp} で補間して使う。
- */
-export type Template = Record<string, PoseTransform>;
+export type Template = Record<string, Pose>;
 
-/** {@link KokoroRig} コンストラクタのオプション */
-export interface KokoroRigOptions {
-	/**
-	 * 親リグ。指定すると親の activeTransform も合成される。
-	 * 部位ごとに独立したリグを作りつつ、ルートリグの動きを継承させたい場合に使う。
-	 */
-	parent?: KokoroRig;
-}
-
-/**
- * PIXI.MeshPlane の頂点を毎フレーム書き換えることで
- * キャラクターの体幹・髪・腕などをソフトボディ的に変形させるリグ。
- */
-export class KokoroRig {
+export class Rig {
 	/** ローカル座標の初期頂点バッファ */
 	private readonly origVerts: Float32Array;
 	/** ワールド座標の初期頂点バッファ */
@@ -59,19 +35,7 @@ export class KokoroRig {
 	readonly w: number;
 	readonly h: number;
 
-	/** 現フレームに適用する変形関数リスト */
-	public activeTransform: PoseTransform[] = [];
-	private lastTime: number = 0;
-	private readonly parent?: KokoroRig;
-
-	/**
-	 * @param nodes   - 変形対象の {@link SpriteNode} 配列
-	 * @param options - {@link KokoroRigOptions}
-	 */
-	constructor(nodes: SpriteNode[], options: KokoroRigOptions = {}) {
-		const { parent } = options;
-		this.parent = parent;
-
+	constructor(nodes: SpriteNode[]) {
 		// 全ノードの頂点数を集計してバッファを確保
 		let total = 0;
 		for (const node of nodes) {
@@ -132,16 +96,6 @@ export class KokoroRig {
 		this.h = bounds.h;
 	}
 
-	/**
-	 * 次フレームから適用するポーズをセットする。
-	 * 複数渡した場合はウェイト加算で合成される。
-	 *
-	 * @param transforms - 適用する {@link PoseTransform} の配列
-	 */
-	public setPose(transforms: PoseTransform[]): void {
-		this.activeTransform = transforms;
-	}
-
 	/** 変形済みバッファをメッシュに書き戻す */
 	private applyVerts(): void {
 		for (const { node, start, end } of this.nodeRanges) {
@@ -156,8 +110,7 @@ export class KokoroRig {
 	}
 
 	/** 毎フレーム呼ばれる頂点変形処理 */
-	public tick(time: number): void {
-		this.lastTime = time;
+	public apply(poses: Pose[]): void {
 		const total = this.origVerts.length / 2;
 
 		for (let vi = 0; vi < total; vi++) {
@@ -170,29 +123,8 @@ export class KokoroRig {
 			let totalTx = 0,
 				totalTy = 0;
 
-			if (this.parent) {
-				const pu = (gx - this.parent.minX) / this.parent.w;
-				const pv = (gy - this.parent.minY) / this.parent.h;
-				for (const field of this.parent.activeTransform) {
-					const tr = field(pu, pv, this.parent.lastTime);
-					if (tr.rot !== undefined && tr.pivot !== undefined) {
-						const px = this.parent.minX + tr.pivot.u * this.parent.w;
-						const py = this.parent.minY + tr.pivot.v * this.parent.h;
-						const dx = gx - px;
-						const dy = gy - py;
-						const cos = Math.cos(tr.rot);
-						const sin = Math.sin(tr.rot);
-						totalTx += dx * cos - dy * sin - dx + tr.tx;
-						totalTy += dx * sin + dy * cos - dy + tr.ty;
-					} else {
-						totalTx += tr.tx;
-						totalTy += tr.ty;
-					}
-				}
-			}
-
-			for (const field of this.activeTransform) {
-				const tr = field(u, v, time);
+			for (const pose of poses) {
+				const tr = pose(u, v);
 				if (tr.rot !== undefined && tr.pivot !== undefined) {
 					const px = this.minX + tr.pivot.u * this.w;
 					const py = this.minY + tr.pivot.v * this.h;

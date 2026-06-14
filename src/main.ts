@@ -1,8 +1,8 @@
-import { setupCanvas } from "@kokoro/rig";
+import { lerpPose, setupCanvas } from "@kokoro/rig";
 import gsap from "gsap";
 import { Viewport } from "pixi-viewport";
-import { createCharacter } from "./character";
-import { HAIR_TEMPLATE, SWING_TEMPLATE } from "./template";
+import { blink, container, hairBack, hairFront, root } from "./character";
+import { HAIR_TEMPLATE, POSE_TEMPLATE } from "./template";
 
 const app = await setupCanvas(document.body);
 
@@ -17,20 +17,7 @@ const viewport = new Viewport({
 app.stage.addChild(viewport);
 viewport.drag().pinch().wheel();
 
-const {
-	root,
-	rig,
-	rigs,
-	timer,
-	hairTimer,
-	armTimer,
-	bodyBlender,
-	hairFrontBlender,
-	hairBackBlender,
-	chestBlender,
-	blink,
-} = await createCharacter(app);
-viewport.addChild(root);
+viewport.addChild(container);
 
 function scheduleNextBlink() {
 	const delay = 3000 + Math.random() * 2000;
@@ -53,31 +40,14 @@ window.addEventListener("mousemove", (e) => {
 });
 
 app.ticker.add(() => {
-	rig.setPose([
-		bodyBlender.lerp("left", "right", params.x),
-		bodyBlender.lerp("up", "down", params.y),
+	root.apply([
+		lerpPose(POSE_TEMPLATE.left, POSE_TEMPLATE.right, params.x),
+		lerpPose(POSE_TEMPLATE.up, POSE_TEMPLATE.down, params.y),
 	]);
-
-	rigs.hairFront.setPose([
-		HAIR_TEMPLATE.swing,
-		hairFrontBlender.lerp("leftFront", "rightFront", params.x),
+	hairFront.apply([
+		lerpPose(HAIR_TEMPLATE.leftFront, HAIR_TEMPLATE.rightFront, params.x),
 	]);
-	rigs.hairBack.setPose([
-		HAIR_TEMPLATE.swing,
-		hairBackBlender.lerp("leftBack", "rightBack", params.x),
+	hairBack.apply([
+		lerpPose(HAIR_TEMPLATE.leftBack, HAIR_TEMPLATE.rightBack, params.x),
 	]);
-
-	rigs.frontArm.setPose([SWING_TEMPLATE.swing]);
-
-	rigs.chest.setPose([chestBlender.lerp("swing", "swing", 0.5)]);
-
-	for (const r of [rig]) {
-		r.tick(timer.time);
-	}
-	for (const r of [rigs.hairFront, rigs.hairBack]) {
-		r.tick(hairTimer.time);
-	}
-
-	rigs.frontArm.tick(armTimer.time);
-	rigs.chest.tick(hairTimer.time);
 });

@@ -1,9 +1,9 @@
-import { curve, getSpatialParams, setupCanvas } from "@kokoro/rig";
+import { curve, getSpatialParams, lerpPose, setupCanvas } from "@kokoro/rig";
 import gsap from "gsap";
 import { Viewport } from "pixi-viewport";
 import * as Tone from "tone";
-import { createCharacter } from "./character";
-import { HAIR_TEMPLATE } from "./template";
+import { blink, container, hairBack, hairFront, root } from "./character";
+import { HAIR_TEMPLATE, POSE_TEMPLATE } from "./template";
 
 const audioCtx = new AudioContext();
 Tone.setContext(audioCtx);
@@ -66,20 +66,7 @@ const viewport = new Viewport({
 app.stage.addChild(viewport);
 viewport.drag().pinch().wheel();
 
-const {
-	root,
-	rig,
-	rigs,
-	timer,
-	hairTimer,
-	armTimer,
-	bodyBlender,
-	hairFrontBlender,
-	hairBackBlender,
-	chestBlender,
-	blink,
-} = await createCharacter(app);
-viewport.addChild(root);
+viewport.addChild(container);
 
 const params = { x: 0.5, y: 0.5 };
 window.addEventListener("mousemove", (e) => {
@@ -117,42 +104,19 @@ app.ticker.add(() => {
 		blink();
 	}
 
-	rig.setPose([
-		bodyBlender.lerp("left", "right", params.x),
-		bodyBlender.lerp("up", "down", params.y),
+	root.apply([
+		lerpPose(POSE_TEMPLATE.left, POSE_TEMPLATE.right, params.x),
+		lerpPose(POSE_TEMPLATE.up, POSE_TEMPLATE.down, params.y),
 		(u, v) => {
 			const { fromTop } = getSpatialParams(u, v);
 			const w = curve.power2(fromTop);
-			return { tx: 0, ty: low * w };
+			return { tx: 0, ty: low * mid * w };
 		},
 	]);
-
-	rigs.hairFront.setPose([
-		HAIR_TEMPLATE.swing,
-		hairFrontBlender.lerp("leftFront", "rightFront", params.x),
+	hairFront.apply([
+		lerpPose(HAIR_TEMPLATE.leftFront, HAIR_TEMPLATE.rightFront, params.x),
 	]);
-	rigs.hairBack.setPose([
-		HAIR_TEMPLATE.swing,
-		hairBackBlender.lerp("leftBack", "rightBack", params.x),
+	hairBack.apply([
+		lerpPose(HAIR_TEMPLATE.leftBack, HAIR_TEMPLATE.rightBack, params.x),
 	]);
-
-	const armPose = (sign: number) => () => ({
-		tx: 0,
-		ty: 0,
-		rot: sign * mid * 0.0005,
-		pivot: { u: 0.5, v: 0 },
-	});
-
-	rigs.frontArm.setPose([armPose(-1)]);
-
-	rigs.chest.setPose([chestBlender.lerp("swing", "swing", 0.5)]);
-
-	for (const r of [rig]) {
-		r.tick(timer.time);
-	}
-	for (const r of [rigs.hairFront, rigs.hairBack]) {
-		r.tick(hairTimer.time);
-	}
-	rigs.frontArm.tick(armTimer.time);
-	rigs.chest.tick(hairTimer.time);
 });

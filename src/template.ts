@@ -50,19 +50,6 @@ export const POSE_TEMPLATE: Template = {
 };
 
 export const HAIR_TEMPLATE: Template = {
-	swing: (u, v, t) => {
-		const { fromBottom } = getSpatialParams(u, v);
-		const swing = Math.sin(t * 0.05);
-		const w = curve.power1(fromBottom);
-
-		return {
-			tx: 0,
-			ty: 0,
-			rot: 0.05 * swing * w,
-			pivot: { u: 0.5, v: 0.0 },
-		};
-	},
-
 	leftFront: (u, v) => {
 		const { fromBottom } = getSpatialParams(u, v);
 		const w = curve.power1(fromBottom);
@@ -100,22 +87,6 @@ export const HAIR_TEMPLATE: Template = {
 		return {
 			tx: -10 * w,
 			ty: 0,
-		};
-	},
-};
-
-export const SWING_TEMPLATE: Template = {
-	swing: (u, v, t) => {
-		const { fromBottom } = getSpatialParams(u, v);
-		const swing = Math.sin(t * 0.05);
-		const armCurve: Curve = (t: number) => t ** 0.5;
-		const w = armCurve(fromBottom);
-
-		return {
-			tx: 0,
-			ty: 0,
-			rot: 0.05 * swing * w,
-			pivot: { u: 0.5, v: 0.0 },
 		};
 	},
 };
