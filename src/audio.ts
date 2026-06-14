@@ -1,9 +1,23 @@
-import { curve, getSpatialParams, lerpPose, setupCanvas } from "@kokoro/rig";
+import {
+	curve,
+	getSpatialParams,
+	lerpPose,
+	setupCanvas,
+	withParent,
+} from "@kokoro/rig";
 import gsap from "gsap";
 import { Viewport } from "pixi-viewport";
 import * as Tone from "tone";
-import { blink, container, hairBack, hairFront, root } from "./character";
-import { HAIR_TEMPLATE, POSE_TEMPLATE } from "./template";
+import {
+	blink,
+	container,
+	frontArm,
+	hairBack,
+	hairFront,
+	ribbon,
+	root,
+} from "./character";
+import { HAIR_TEMPLATE, POSE_TEMPLATE, SWING_TEMPLATE } from "./template";
 
 const audioCtx = new AudioContext();
 Tone.setContext(audioCtx);
@@ -19,7 +33,7 @@ async function connectCapture(): Promise<void> {
 	audioCtx.createMediaStreamSource(stream).connect(analyser);
 }
 
-const bands = { low: 0, mid: 0, high: 0 };
+const bands = { low: 0 };
 
 function readBands() {
 	const buf = new Uint8Array(analyser.frequencyBinCount);
@@ -38,8 +52,6 @@ function readBands() {
 
 	gsap.to(bands, {
 		low: avg(60, 250),
-		mid: avg(250, 2000),
-		high: avg(2000, 8000),
 		duration: 0.1,
 		ease: "sine.out",
 	});
@@ -81,12 +93,7 @@ window.addEventListener("mousemove", (e) => {
 document
 	.getElementById("btn-low")
 	?.addEventListener("click", () => playTone("E2"));
-document
-	.getElementById("btn-mid")
-	?.addEventListener("click", () => playTone("B5"));
-document
-	.getElementById("btn-high")
-	?.addEventListener("click", () => playTone("B7"));
+
 document.getElementById("btn-capture")?.addEventListener(
 	"click",
 	async () => {
@@ -96,27 +103,43 @@ document.getElementById("btn-capture")?.addEventListener(
 	{ once: true },
 );
 
-app.ticker.add(() => {
-	const { low, mid, high } =
-		audioCtx.state === "running" ? readBands() : { low: 0, mid: 0, high: 0 };
-
-	if (high > 255 / 2) {
+function scheduleNextBlink() {
+	const delay = 3000 + Math.random() * 2000;
+	setTimeout(() => {
 		blink();
-	}
+		scheduleNextBlink();
+	}, delay);
+}
+scheduleNextBlink();
 
-	root.apply([
+const VOLUME_TEMPLATE = (volume: number) => (u: number, v: number) => {
+	const { fromTop } = getSpatialParams(u, v);
+	const w = curve.power2(fromTop);
+	return { tx: 0, ty: volume * w };
+};
+
+app.ticker.add((ticker) => {
+	const t = ticker.lastTime / 1000;
+
+	const { low } = audioCtx.state === "running" ? readBands() : { low: 0 };
+
+	const rootPoses = [
 		lerpPose(POSE_TEMPLATE.left, POSE_TEMPLATE.right, params.x),
 		lerpPose(POSE_TEMPLATE.up, POSE_TEMPLATE.down, params.y),
-		(u, v) => {
-			const { fromTop } = getSpatialParams(u, v);
-			const w = curve.power2(fromTop);
-			return { tx: 0, ty: low * mid * w };
-		},
-	]);
-	hairFront.apply([
+		VOLUME_TEMPLATE(low),
+	];
+
+	root.apply(rootPoses);
+
+	const apply = withParent(root, rootPoses);
+	apply(hairFront, [
 		lerpPose(HAIR_TEMPLATE.leftFront, HAIR_TEMPLATE.rightFront, params.x),
+		SWING_TEMPLATE(t * 2, 0.1),
 	]);
-	hairBack.apply([
+	apply(hairBack, [
 		lerpPose(HAIR_TEMPLATE.leftBack, HAIR_TEMPLATE.rightBack, params.x),
+		SWING_TEMPLATE(t * 2, 0.1),
 	]);
+	apply(frontArm, [SWING_TEMPLATE(t * 1.5, 0.1)]);
+	apply(ribbon, [SWING_TEMPLATE(t * 2.5, 0.1)]);
 });

@@ -1,17 +1,15 @@
 import type { SpriteNode } from "../image/psd";
 import { type Group, groupNodes, psdGroup } from "../rig/matcher";
-import type { Pose } from "../rig/rig";
+import type { Pose, Rig } from "../rig/rig";
 
 export type Curve = (t: number) => number;
 
 export type Guard = (t: number) => boolean;
 
 export const curve = {
-	power1: (t: number) => t,
 	power2: (t: number) => t ** 2,
 	power3: (t: number) => t ** 3,
 	power4: (t: number) => t ** 4,
-	arm: (t: number) => t ** 0.5,
 } as const;
 
 /** {@link getSpatialParams} の戻り値 */
@@ -82,4 +80,20 @@ export class Switcher {
 			this.groups[name].visible = visible;
 		}
 	}
+}
+
+export function follow(child: Rig, parent: Rig, pose: Pose): Pose {
+	return (u, v) =>
+		pose(
+			(child.minX + u * child.w - parent.minX) / parent.w,
+			(child.minY + v * child.h - parent.minY) / parent.h,
+		);
+}
+
+export function withParent(parent: Rig, parentPoses: Pose[]) {
+	return (child: Rig, localPoses: Pose[]) =>
+		child.apply([
+			...parentPoses.map((p) => follow(child, parent, p)),
+			...localPoses,
+		]);
 }

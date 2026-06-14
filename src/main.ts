@@ -1,8 +1,16 @@
-import { lerpPose, setupCanvas } from "@kokoro/rig";
+import { lerpPose, setupCanvas, withParent } from "@kokoro/rig";
 import gsap from "gsap";
 import { Viewport } from "pixi-viewport";
-import { blink, container, hairBack, hairFront, root } from "./character";
-import { HAIR_TEMPLATE, POSE_TEMPLATE } from "./template";
+import {
+	blink,
+	container,
+	frontArm,
+	hairBack,
+	hairFront,
+	ribbon,
+	root,
+} from "./character";
+import { HAIR_TEMPLATE, POSE_TEMPLATE, SWING_TEMPLATE } from "./template";
 
 const app = await setupCanvas(document.body);
 
@@ -39,15 +47,24 @@ window.addEventListener("mousemove", (e) => {
 	});
 });
 
-app.ticker.add(() => {
-	root.apply([
+app.ticker.add((ticker) => {
+	const t = ticker.lastTime / 1000;
+	const rootPoses = [
 		lerpPose(POSE_TEMPLATE.left, POSE_TEMPLATE.right, params.x),
 		lerpPose(POSE_TEMPLATE.up, POSE_TEMPLATE.down, params.y),
-	]);
-	hairFront.apply([
+	];
+
+	root.apply(rootPoses);
+
+	const apply = withParent(root, rootPoses);
+	apply(hairFront, [
 		lerpPose(HAIR_TEMPLATE.leftFront, HAIR_TEMPLATE.rightFront, params.x),
+		SWING_TEMPLATE(t * 2, 0.1),
 	]);
-	hairBack.apply([
+	apply(hairBack, [
 		lerpPose(HAIR_TEMPLATE.leftBack, HAIR_TEMPLATE.rightBack, params.x),
+		SWING_TEMPLATE(t * 2, 0.1),
 	]);
+	apply(frontArm, [SWING_TEMPLATE(t * 1.5, 0.1)]);
+	apply(ribbon, [SWING_TEMPLATE(t * 2.5, 0.1)]);
 });

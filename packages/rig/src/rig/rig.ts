@@ -14,8 +14,6 @@ export interface Transform {
 
 export type Pose = (u: number, v: number) => Transform;
 
-export type Template = Record<string, Pose>;
-
 export class Rig {
 	/** ローカル座標の初期頂点バッファ */
 	private readonly origVerts: Float32Array;

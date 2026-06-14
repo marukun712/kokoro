@@ -1,12 +1,7 @@
-import {
-	type Curve,
-	curve,
-	getSpatialParams,
-	type Template,
-} from "@kokoro/rig";
+import { type Curve, curve, getSpatialParams } from "@kokoro/rig";
 
-export const POSE_TEMPLATE: Template = {
-	left: (u, v) => {
+export const POSE_TEMPLATE = {
+	left: (u: number, v: number) => {
 		const { fromTop } = getSpatialParams(u, v);
 		const w = curve.power2(fromTop);
 
@@ -16,7 +11,7 @@ export const POSE_TEMPLATE: Template = {
 		};
 	},
 
-	right: (u, v) => {
+	right: (u: number, v: number) => {
 		const { fromTop } = getSpatialParams(u, v);
 		const w = curve.power2(fromTop);
 
@@ -26,7 +21,7 @@ export const POSE_TEMPLATE: Template = {
 		};
 	},
 
-	up: (u, v) => {
+	up: (u: number, v: number) => {
 		const { fromTop } = getSpatialParams(u, v);
 		const chestCurve: Curve = (t: number) => Math.sin(t * Math.PI);
 		const w = chestCurve(fromTop);
@@ -37,7 +32,7 @@ export const POSE_TEMPLATE: Template = {
 		};
 	},
 
-	down: (u, v) => {
+	down: (u: number, v: number) => {
 		const { fromTop } = getSpatialParams(u, v);
 		const chestCurve: Curve = (t: number) => Math.sin(t * Math.PI);
 		const w = chestCurve(fromTop);
@@ -49,44 +44,54 @@ export const POSE_TEMPLATE: Template = {
 	},
 };
 
-export const HAIR_TEMPLATE: Template = {
-	leftFront: (u, v) => {
+export const HAIR_TEMPLATE = {
+	leftFront: (u: number, v: number) => {
 		const { fromBottom } = getSpatialParams(u, v);
-		const w = curve.power1(fromBottom);
 
 		return {
-			tx: -50 * w,
+			tx: -50 * fromBottom,
 			ty: 0,
 		};
 	},
 
-	rightFront: (u, v) => {
+	rightFront: (u: number, v: number) => {
 		const { fromBottom } = getSpatialParams(u, v);
-		const w = curve.power1(fromBottom);
 
 		return {
-			tx: 50 * w,
+			tx: 50 * fromBottom,
 			ty: 0,
 		};
 	},
 
-	leftBack: (u, v) => {
+	leftBack: (u: number, v: number) => {
 		const { fromBottom } = getSpatialParams(u, v);
-		const w = curve.power1(fromBottom);
 
 		return {
-			tx: 10 * w,
+			tx: 10 * fromBottom,
 			ty: 0,
 		};
 	},
 
-	rightBack: (u, v) => {
+	rightBack: (u: number, v: number) => {
 		const { fromBottom } = getSpatialParams(u, v);
-		const w = curve.power1(fromBottom);
 
 		return {
-			tx: -10 * w,
+			tx: -10 * fromBottom,
 			ty: 0,
 		};
 	},
 };
+
+export const SWING_TEMPLATE =
+	(t: number, scale: number) => (u: number, v: number) => {
+		const { fromBottom } = getSpatialParams(u, v);
+		const w = curve.power2(fromBottom);
+		const swing = Math.sin(t);
+
+		return {
+			tx: 0,
+			ty: 0,
+			rot: scale * swing * w,
+			pivot: { u: 0.5, v: 0.0 },
+		};
+	};
