@@ -134,7 +134,10 @@ export function follow(child: Rig, parent: Rig, pose: Pose): Pose {
  * @param parentPoses - 親に適用中のポーズ配列
  * @returns `(child, localPoses) => void` の関数
  */
-export function withParent(parent: Rig, parentPoses: Pose[]) {
+export function withParent(
+	parent: Rig,
+	parentPoses: Pose[],
+): (child: Rig, localPoses: Pose[]) => void {
 	return (child: Rig, localPoses: Pose[]) =>
 		child.apply([
 			...parentPoses.map((p) => follow(child, parent, p)),
