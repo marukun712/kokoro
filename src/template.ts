@@ -6,7 +6,7 @@ export const POSE_TEMPLATE = {
 		const w = curve.power2(fromTop);
 
 		return {
-			tx: -100 * w,
+			tx: -50 * w,
 			ty: 0,
 		};
 	},
@@ -16,7 +16,7 @@ export const POSE_TEMPLATE = {
 		const w = curve.power2(fromTop);
 
 		return {
-			tx: 100 * w,
+			tx: 50 * w,
 			ty: 0,
 		};
 	},
