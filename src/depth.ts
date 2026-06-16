@@ -1,8 +1,8 @@
-import { curve, getSpatialParams, lerpPose, setupCanvas } from "@kokoro/rig";
+import { lerpPose, setupCanvas } from "@kokoro/rig";
 import gsap from "gsap";
 import { Viewport } from "pixi-viewport";
 import { blink, container, root } from "./character";
-import { POSE_TEMPLATE } from "./template";
+import { DEPTH_TEMPLATE } from "./template";
 
 const app = await setupCanvas(document.body);
 const viewport = new Viewport({
@@ -48,17 +48,7 @@ worker.onmessage = (e) => {
 		return e.data.depth[py * e.data.width + px] / 255; // 0~1に正規化
 	}
 
-	// 深度値が大きい(手前)ほど視差が大きくなるポーズ
-	const DEPTH_PARALLAX =
-		(parallaxX: number, parallaxY: number) => (u: number, v: number) => {
-			const { fromTop } = getSpatialParams(u, v);
-			const w = curve.power2(fromTop);
-			const d = sampleDepth(u, v);
-			return {
-				tx: d * parallaxX * 200 * w,
-				ty: d * parallaxY * 50 * w,
-			};
-		};
+	const depthTemplate = DEPTH_TEMPLATE(sampleDepth, 80, 80);
 
 	document.getElementById("loading")?.remove();
 
@@ -82,13 +72,9 @@ worker.onmessage = (e) => {
 	});
 
 	app.ticker.add(() => {
-		const dx = (params.x - 0.5) * 2;
-		const dy = (params.y - 0.5) * 2;
-
 		const rootPoses = [
-			lerpPose(POSE_TEMPLATE.left, POSE_TEMPLATE.right, params.x),
-			lerpPose(POSE_TEMPLATE.up, POSE_TEMPLATE.down, params.y),
-			DEPTH_PARALLAX(dx, dy),
+			lerpPose(depthTemplate.left, depthTemplate.right, params.x),
+			lerpPose(depthTemplate.up, depthTemplate.down, params.y),
 		];
 
 		root.apply(rootPoses);

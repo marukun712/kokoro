@@ -1,5 +1,36 @@
 import { type Curve, curve, getSpatialParams } from "@kokoro/rig";
 
+export const DEPTH_TEMPLATE = (
+	sampleDepth: (u: number, v: number) => number,
+	scaleX: number,
+	scaleY: number,
+) => ({
+	left: (u: number, v: number) => {
+		const { fromTop } = getSpatialParams(u, v);
+		const w = curve.power2(fromTop);
+		const d = sampleDepth(u, v);
+		return { tx: -d * scaleX * w, ty: 0 };
+	},
+	right: (u: number, v: number) => {
+		const { fromTop } = getSpatialParams(u, v);
+		const w = curve.power2(fromTop);
+		const d = sampleDepth(u, v);
+		return { tx: d * scaleX * w, ty: 0 };
+	},
+	up: (u: number, v: number) => {
+		const { fromTop } = getSpatialParams(u, v);
+		const w = curve.power2(fromTop);
+		const d = sampleDepth(u, v);
+		return { tx: 0, ty: -d * scaleY * w };
+	},
+	down: (u: number, v: number) => {
+		const { fromTop } = getSpatialParams(u, v);
+		const w = curve.power2(fromTop);
+		const d = sampleDepth(u, v);
+		return { tx: 0, ty: d * scaleY * w };
+	},
+});
+
 export const POSE_TEMPLATE = {
 	left: (u: number, v: number) => {
 		const { fromTop } = getSpatialParams(u, v);
