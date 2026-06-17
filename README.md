@@ -7,10 +7,6 @@
 
 https://github.com/marukun712/kokoro
 
-本デモページでは、以下の立ち絵を使用させていただいております。
-
-https://seiga.nicovideo.jp/seiga/im11114797
-
 ---
 
 ## コンセプト
@@ -47,8 +43,8 @@ rig.apply([
 Depth Anything V2 がキャラクター画像から奥行き情報を推定し、手前にある部位ほど大きく動く視差ポーズを自動生成します。生成されたポーズは通常の `Pose` と同じ形なので、`lerpPose` や `withParent` とそのまま組み合わせられます。
 
 ```ts
-const depthResult = await getDepth(app.stage, app.renderer as PIXI.Renderer);
-const DEPTH = DEPTH_TEMPLATE(depthResult.sampleDepth, 30, 20);
+const depthResult = await getDepth(container, app.renderer);
+const DEPTH = DEPTH_TEMPLATE(depthResult.sampleDepth, 80, 80);
 
 rig.apply([
   lerpPose(DEPTH.left, DEPTH.right, mouseX),
