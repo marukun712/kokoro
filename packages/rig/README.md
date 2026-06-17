@@ -6,6 +6,18 @@
 
 キャラクターの PSD ファイルを読み込み、レイヤーを PIXI スプライトとして描画し、毎フレームの頂点変形でアニメーションさせます。
 
+変形の基本単位は `Pose` です。`Pose` は `(u, v) => Transform` というシグネチャを持つ純粋関数で、各頂点の UV 座標を受け取り変形量を返します。複数の `Pose` をウェイト加算で合成でき、`lerpPose` で補間することで、マウス追従や揺れといったアニメーションを関数の組み合わせだけで表現できます。
+
+深度推定モジュール (`@kokoro/rig/depth`) はこの `Pose` 体系の拡張です。画像から推定した深度マップを `DEPTH_TEMPLATE` に渡すと、視差を再現する `Pose` が自動生成されます。
+
+---
+
+## インストール
+
+```bash
+npx jsr add @kokoro/rig
+```
+
 ---
 
 ## Canvas の初期化
@@ -50,12 +62,12 @@ const layers = await walkPSD("/models/character.psd", {
 | `clipping` | `boolean` | クリッピングマスク対象か |
 | `hidden` | `boolean` | 非表示レイヤーか |
 
-### `drawCharacter(layers)`
+### `drawPSD(layers)`
 
 `PSDIndex[]` から PIXI スプライト (`SpriteNode[]`) を生成して返します。各スプライトは `PIXI.MeshPlane` で作られており、頂点変形が可能です。
 
 ```ts
-const nodes = drawCharacter(layers);
+const nodes = drawPSD(layers);
 for (const node of nodes) {
   app.stage.addChild(node.container);
 }
@@ -69,6 +81,15 @@ for (const node of nodes) {
 | `path` | `string[]` | ルートからのパス |
 | `container` | `PIXI.Container` | スプライトを包む Container |
 | `sprite` | `PIXI.MeshPlane` | メッシュ変形可能なスプライト本体 |
+
+### `drawPNG(url)`
+
+PNG ファイルを取得して単一の `SpriteNode[]` として返します。PSD を使わない場合に使用します。
+
+```ts
+const nodes = await drawPNG("/models/character.png");
+app.stage.addChild(nodes[0].container);
+```
 
 ---
 
@@ -151,8 +172,7 @@ const rig = new Rig(nodes);
 ポーズを適用して頂点変形を行います。複数渡した場合はウェイト加算で合成されます。毎フレーム呼び出してください。
 
 ```ts
-app.ticker.add((ticker) => {
-  const t = ticker.lastTime / 1000;
+app.ticker.add(() => {
   rig.apply([
     lerpPose(TEMPLATE.left, TEMPLATE.right, mouseX),
     lerpPose(TEMPLATE.up, TEMPLATE.down, mouseY),
@@ -173,7 +193,7 @@ app.ticker.add((ticker) => {
 
 ## Pose と Transform
 
-`Pose` は `(u, v) => Transform` のシグネチャを持ち、頂点ごとの変形量を返す関数です。
+`Pose` は `(u, v) => Transform` のシグネチャを持つ純粋関数で、頂点ごとの変形量を返します。
 
 #### `Transform` フィールド
 
@@ -269,3 +289,48 @@ switcher.apply({ "目_閉じ": true, "口_あ": false });
 ```
 
 コンストラクタに渡したレイヤー名ごとに `psdGroup` でグループが作成され、`apply` で一括切り替えします。
+
+---
+
+## 深度推定変形 (オプション)
+
+`@kokoro/rig/depth` は `Pose` 体系の拡張モジュールです。Depth Anything V2 で画像から深度マップを推定し、`DEPTH_TEMPLATE` を使って視差を再現する `Pose` を生成します。
+
+```ts
+import { getDepth, DEPTH_TEMPLATE } from "@kokoro/rig/depth";
+```
+
+### `getDepth(container, renderer, model?)`
+
+PIXI の Container をキャプチャして深度推定を行い、`DepthResult` を返します。推論は Web Worker 上で動作します。
+
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `container` | `PIXI.Container` | キャプチャ対象 |
+| `renderer` | `PIXI.Renderer` | ピクセル抽出に使用 |
+| `model` | `"small" \| "base" \| "large"` | モデルサイズ (デフォルト: `"base"`) |
+
+```ts
+const depthResult = await getDepth(app.stage, app.renderer as PIXI.Renderer);
+```
+
+#### `DepthResult`
+
+| プロパティ | 型 | 説明 |
+|---|---|---|
+| `sampleDepth` | `(u, v) => number` | UV 座標から深度値 (0~1) を取得する関数 |
+| `data` | `Uint8Array` | 深度マップの生ピクセルデータ |
+| `width`, `height` | `number` | 深度マップのサイズ |
+
+### `DEPTH_TEMPLATE(sampleDepth, scaleX, scaleY)`
+
+深度マップを使って左右・上下の視差ポーズを生成します。`TEMPLATE` と同じ形で `lerpPose` に渡せます。
+
+```ts
+const DEPTH = DEPTH_TEMPLATE(depthResult.sampleDepth, 30, 20);
+
+rig.apply([
+  lerpPose(DEPTH.left, DEPTH.right, mouseX),
+  lerpPose(DEPTH.up, DEPTH.down, mouseY),
+]);
+```

@@ -1,15 +1,30 @@
 import type * as PIXI from "pixi.js";
 import { getSpatialParams } from "../utils/utils";
 
+/** `getDepth` の戻り値 */
 export interface DepthResult {
+	/** UV 座標から深度値 (0~1) を取得する関数 */
 	sampleDepth: (u: number, v: number) => number;
+	/** 深度マップの生ピクセルデータ */
 	data: Uint8Array;
+	/** 深度マップの幅 (px) */
 	width: number;
+	/** 深度マップの高さ (px) */
 	height: number;
 }
 
+/** 深度推定モデルのサイズ */
 export type DepthModelSize = "small" | "base" | "large";
 
+/**
+ * PIXI の Container をキャプチャして深度推定を実行し、深度マップを返す。
+ * 推論は Web Worker 上で行われる。
+ *
+ * @param container - キャプチャ対象の PIXI.Container
+ * @param renderer  - PIXI.Renderer (ピクセル抽出に使用)
+ * @param model     - 使用するモデルサイズ (デフォルト: "base")
+ * @returns {@link DepthResult}
+ */
 export async function getDepth(
 	container: PIXI.Container,
 	renderer: PIXI.Renderer,
@@ -60,6 +75,15 @@ export async function getDepth(
 	});
 }
 
+/**
+ * 深度マップを使って左右・上下の視差ポーズを生成するテンプレート。
+ * 深度値が大きいほど (手前にあるほど) 変形量が大きくなる。
+ *
+ * @param sampleDepth - {@link DepthResult.sampleDepth}
+ * @param scaleX      - X 方向の最大移動量 (px)
+ * @param scaleY      - Y 方向の最大移動量 (px)
+ * @returns `left` / `right` / `up` / `down` の {@link Pose} を持つオブジェクト
+ */
 export const DEPTH_TEMPLATE = (
 	sampleDepth: (u: number, v: number) => number,
 	scaleX: number,

@@ -12,6 +12,10 @@ export interface Transform {
 	pivot?: { u: number; v: number };
 }
 
+/**
+ * 頂点の UV 座標を受け取り、その頂点の変形量 ({@link Transform}) を返す純粋関数。
+ * 複数の `Pose` を `Rig.apply` に渡すとウェイト加算で合成される。
+ */
 export type Pose = (u: number, v: number) => Transform;
 
 /**

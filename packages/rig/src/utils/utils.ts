@@ -2,20 +2,27 @@ import type { SpriteNode } from "../image/psd";
 import { type Group, groupNodes, psdGroup } from "../rig/matcher";
 import type { Pose, Rig } from "../rig/rig";
 
-/** `t` (0~1) を受け取りイージング後の値を返す関数型 */
+/**
+ * `t` (0~1) を受け取りイージング後の値を返す関数型。
+ * `getSpatialParams` の戻り値をウェイトへ変換する際に使う。
+ */
 export type Curve = (t: number) => number;
 
-/** `t` を受け取り条件を満たすか返す関数型 */
+/** `t` を受け取り条件を満たすか返す関数型。ポーズの適用範囲を限定するガード条件に使う。 */
 export type Guard = (t: number) => boolean;
 
-/** UV ウェイトをイージングするための関数辞書 */
+/** べき乗イージング関数の辞書。`getSpatialParams` の戻り値に適用してウェイトを調整する。 */
 export const curve = {
 	power2: (t: number) => t ** 2,
 	power3: (t: number) => t ** 3,
 	power4: (t: number) => t ** 4,
 } as const;
 
-/** {@link getSpatialParams} の戻り値 */
+/**
+ * {@link getSpatialParams} の戻り値。
+ * `Pose` 内のウェイト計算に使う。
+ * `fromCenterX` は -0.5~0.5、`isUpperBody` は boolean、その他は 0~1 の範囲。
+ */
 export interface SpatialParams {
 	fromTop: number;
 	fromBottom: number;

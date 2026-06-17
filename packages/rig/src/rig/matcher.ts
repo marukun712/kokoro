@@ -1,5 +1,9 @@
 import type { SpriteNode } from "../image/psd";
 
+/**
+ * `groupNodes` が返すノードの集合。
+ * プロパティへの代入は内包する全 Container に一括反映される。
+ */
 export interface Group {
 	/** グループに含まれるノード一覧 */
 	nodes: SpriteNode[];
