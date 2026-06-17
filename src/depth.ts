@@ -36,19 +36,47 @@ ctx.putImageData(
 const dataURL = tempCanvas.toDataURL("image/png");
 
 // 深度推定
-const worker = new Worker(new URL("./inference.ts", import.meta.url), {
-	type: "module",
-});
+const worker = new Worker(
+	new URL("./models/depth-anything/inference.ts", import.meta.url),
+	{
+		type: "module",
+	},
+);
+
 worker.postMessage(dataURL);
 
 worker.onmessage = (e) => {
+	console.log(e);
+
+	const depthCanvas = document.createElement("canvas");
+	depthCanvas.width = e.data.width;
+	depthCanvas.height = e.data.height;
+	const depthCtx = depthCanvas.getContext("2d");
+	if (depthCtx) {
+		const rgba = new Uint8ClampedArray(e.data.width * e.data.height * 4);
+		for (let i = 0; i < e.data.depth.length; i++) {
+			const v = e.data.depth[i];
+			rgba[i * 4 + 0] = v;
+			rgba[i * 4 + 1] = v;
+			rgba[i * 4 + 2] = v;
+			rgba[i * 4 + 3] = 255;
+		}
+		depthCtx.putImageData(
+			new ImageData(rgba, e.data.width, e.data.height),
+			0,
+			0,
+		);
+	}
+	depthCanvas.className = "depth-preview";
+	document.body.appendChild(depthCanvas);
+
 	function sampleDepth(u: number, v: number): number {
 		const px = Math.min(Math.floor(u * e.data.width), e.data.width - 1);
 		const py = Math.min(Math.floor(v * e.data.height), e.data.height - 1);
 		return e.data.depth[py * e.data.width + px] / 255; // 0~1に正規化
 	}
 
-	const depthTemplate = DEPTH_TEMPLATE(sampleDepth, 80, 80);
+	const depthTemplate = DEPTH_TEMPLATE(sampleDepth, 40, 40);
 
 	document.getElementById("loading")?.remove();
 
