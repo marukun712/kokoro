@@ -2,8 +2,9 @@ import { lerpPose, setupCanvas } from "@kokoro/rig";
 import { DEPTH_TEMPLATE, getDepth } from "@kokoro/rig/depth";
 import gsap from "gsap";
 import { Viewport } from "pixi-viewport";
-import { container, root } from "./character";
+import { pickPNG } from "./setup";
 
+const { container, root } = await pickPNG();
 const app = await setupCanvas(document.body);
 const viewport = new Viewport({
 	screenWidth: window.innerWidth,
@@ -16,25 +17,10 @@ app.stage.addChild(viewport);
 viewport.drag().pinch().wheel();
 viewport.addChild(container);
 
-app.renderer.render(app.stage);
-const {
-	pixels,
-	width: imgW,
-	height: imgH,
-} = app.renderer.extract.pixels(container);
-const tempCanvas = document.createElement("canvas");
-tempCanvas.width = imgW;
-tempCanvas.height = imgH;
-const ctx = tempCanvas.getContext("2d");
-if (!ctx) throw new Error("failed to get 2d context");
-ctx.putImageData(
-	new ImageData(new Uint8ClampedArray(pixels), imgW, imgH),
-	0,
-	0,
+const { sampleDepth, data, width, height } = await getDepth(
+	container,
+	app.renderer,
 );
-const dataURL = tempCanvas.toDataURL("image/png");
-
-const { sampleDepth, data, width, height } = await getDepth(dataURL);
 
 const depthCanvas = document.createElement("canvas");
 depthCanvas.width = width;

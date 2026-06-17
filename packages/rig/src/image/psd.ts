@@ -92,7 +92,11 @@ export async function walkPSD(
  * @param layers - {@link walkPSD} の戻り値
  * @returns {@link SpriteNode} の配列。描画順は入力と同じ
  */
-export function drawPSD(layers: PSDIndex[]): SpriteNode[] {
+export function drawPSD(
+	layers: PSDIndex[],
+	verticesX = 250,
+	verticesY = 250,
+): SpriteNode[] {
 	const nodes: SpriteNode[] = [];
 
 	for (const layer of layers) {
@@ -100,8 +104,8 @@ export function drawPSD(layers: PSDIndex[]): SpriteNode[] {
 
 		const sprite = new PIXI.MeshPlane({
 			texture: PIXI.Texture.from(layer.canvas),
-			verticesX: 5,
-			verticesY: 5,
+			verticesX,
+			verticesY,
 		});
 		sprite.x = layer.x;
 		sprite.y = layer.y;

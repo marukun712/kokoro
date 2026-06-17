@@ -1,9 +1,10 @@
 import { lerpPose, setupCanvas } from "@kokoro/rig";
 import gsap from "gsap";
 import { Viewport } from "pixi-viewport";
-import { container, root } from "./character";
+import { pickPNG } from "./setup";
 import { POSE_TEMPLATE } from "./template";
 
+const { container, root } = await pickPNG();
 const app = await setupCanvas(document.body);
 
 const viewport = new Viewport({

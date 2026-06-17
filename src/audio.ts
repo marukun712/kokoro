@@ -2,7 +2,7 @@ import { curve, getSpatialParams, lerpPose, setupCanvas } from "@kokoro/rig";
 import gsap from "gsap";
 import { Viewport } from "pixi-viewport";
 import * as Tone from "tone";
-import { container, root } from "./character";
+import { pickPNG } from "./setup";
 import { POSE_TEMPLATE } from "./template";
 
 const audioCtx = new AudioContext();
@@ -53,6 +53,7 @@ async function playTone(note: string) {
 		.triggerAttackRelease(note, 0.1);
 }
 
+const { container, root } = await pickPNG();
 const app = await setupCanvas(document.body);
 const viewport = new Viewport({
 	screenWidth: window.innerWidth,

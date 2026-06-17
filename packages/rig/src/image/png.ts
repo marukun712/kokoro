@@ -7,13 +7,17 @@ import type { SpriteNode } from "./psd";
  * @param url - PNG ファイルの URL
  * @returns 要素1つの {@link SpriteNode} 配列
  */
-export async function drawPNG(url: string): Promise<SpriteNode[]> {
+export async function drawPNG(
+	url: string,
+	verticesX = 250,
+	verticesY = 250,
+): Promise<SpriteNode[]> {
 	const texture = await PIXI.Assets.load<PIXI.Texture>(url);
 
 	const sprite = new PIXI.MeshPlane({
 		texture,
-		verticesX: 5,
-		verticesY: 5,
+		verticesX,
+		verticesY,
 	});
 
 	const container = new PIXI.Container();

@@ -1,4 +1,5 @@
-import { curve, getSpatialParams } from "../utils/utils";
+import type * as PIXI from "pixi.js";
+import { getSpatialParams } from "../utils/utils";
 
 export interface DepthResult {
 	sampleDepth: (u: number, v: number) => number;
@@ -7,14 +8,36 @@ export interface DepthResult {
 	height: number;
 }
 
-export async function getDepth(dataURL: string): Promise<DepthResult> {
-	return new Promise((resolve, reject) => {
-		const worker = new Worker(
-			new URL("./models/depth-anything/inference.ts", import.meta.url),
-			{ type: "module" },
-		);
+export type DepthModelSize = "small" | "base" | "large";
 
-		worker.postMessage(dataURL);
+export async function getDepth(
+	container: PIXI.Container,
+	renderer: PIXI.Renderer,
+	model: DepthModelSize = "base",
+): Promise<DepthResult> {
+	const {
+		pixels,
+		width: imgW,
+		height: imgH,
+	} = renderer.extract.pixels(container);
+	const tempCanvas = document.createElement("canvas");
+	tempCanvas.width = imgW;
+	tempCanvas.height = imgH;
+	const ctx = tempCanvas.getContext("2d");
+	if (!ctx) throw new Error("failed to get 2d context");
+	ctx.putImageData(
+		new ImageData(new Uint8ClampedArray(pixels), imgW, imgH),
+		0,
+		0,
+	);
+	const dataURL = tempCanvas.toDataURL("image/png");
+
+	return new Promise((resolve, reject) => {
+		const worker = new Worker(new URL("./worker.ts", import.meta.url), {
+			type: "module",
+		});
+
+		worker.postMessage({ dataURL, model });
 
 		worker.onmessage = (e) => {
 			const { depth, width, height } = e.data as {
@@ -44,26 +67,22 @@ export const DEPTH_TEMPLATE = (
 ) => ({
 	left: (u: number, v: number) => {
 		const { fromTop } = getSpatialParams(u, v);
-		const w = curve.power2(fromTop);
 		const d = sampleDepth(u, v);
-		return { tx: -d * scaleX * w, ty: 0 };
+		return { tx: -d * scaleX * fromTop, ty: 0 };
 	},
 	right: (u: number, v: number) => {
 		const { fromTop } = getSpatialParams(u, v);
-		const w = curve.power2(fromTop);
 		const d = sampleDepth(u, v);
-		return { tx: d * scaleX * w, ty: 0 };
+		return { tx: d * scaleX * fromTop, ty: 0 };
 	},
 	up: (u: number, v: number) => {
 		const { fromTop } = getSpatialParams(u, v);
-		const w = curve.power2(fromTop);
 		const d = sampleDepth(u, v);
-		return { tx: 0, ty: -d * scaleY * w };
+		return { tx: 0, ty: -d * scaleY * fromTop };
 	},
 	down: (u: number, v: number) => {
 		const { fromTop } = getSpatialParams(u, v);
-		const w = curve.power2(fromTop);
 		const d = sampleDepth(u, v);
-		return { tx: 0, ty: d * scaleY * w };
+		return { tx: 0, ty: d * scaleY * fromTop };
 	},
 });
