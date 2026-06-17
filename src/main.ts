@@ -1,7 +1,7 @@
 import { lerpPose, setupCanvas } from "@kokoro/rig";
 import gsap from "gsap";
 import { Viewport } from "pixi-viewport";
-import { blink, container, root } from "./character";
+import { container, root } from "./character";
 import { POSE_TEMPLATE } from "./template";
 
 const app = await setupCanvas(document.body);
@@ -18,15 +18,6 @@ app.stage.addChild(viewport);
 viewport.drag().pinch().wheel();
 
 viewport.addChild(container);
-
-function scheduleNextBlink() {
-	const delay = 3000 + Math.random() * 2000;
-	setTimeout(() => {
-		blink();
-		scheduleNextBlink();
-	}, delay);
-}
-scheduleNextBlink();
 
 const params = { x: 0.5, y: 0.5 };
 

@@ -92,7 +92,7 @@ export async function walkPSD(
  * @param layers - {@link walkPSD} の戻り値
  * @returns {@link SpriteNode} の配列。描画順は入力と同じ
  */
-export function drawCharacter(layers: PSDIndex[]): SpriteNode[] {
+export function drawPSD(layers: PSDIndex[]): SpriteNode[] {
 	const nodes: SpriteNode[] = [];
 
 	for (const layer of layers) {

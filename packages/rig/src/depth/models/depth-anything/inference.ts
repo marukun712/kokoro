@@ -9,7 +9,7 @@ self.onmessage = async (e: MessageEvent<string>) => {
 
 	estimator ??= await pipeline(
 		"depth-estimation",
-		"onnx-community/depth-anything-v2-large",
+		"onnx-community/depth-anything-v2-base",
 		{ progress_callback: (p) => console.log(p) },
 	);
 

@@ -3,7 +3,8 @@
 	"private": true,
 	"type": "module",
 	"exports": {
-		".": "./index.ts"
+		".": "./index.ts",
+		"./depth": "./depth.ts"
 	},
 	"dependencies": {
 		"ag-psd": "^30.1.1",

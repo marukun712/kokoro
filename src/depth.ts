@@ -1,8 +1,8 @@
 import { lerpPose, setupCanvas } from "@kokoro/rig";
+import { DEPTH_TEMPLATE, getDepth } from "@kokoro/rig/depth";
 import gsap from "gsap";
 import { Viewport } from "pixi-viewport";
-import { blink, container, root } from "./character";
-import { DEPTH_TEMPLATE } from "./template";
+import { container, root } from "./character";
 
 const app = await setupCanvas(document.body);
 const viewport = new Viewport({
@@ -16,7 +16,6 @@ app.stage.addChild(viewport);
 viewport.drag().pinch().wheel();
 viewport.addChild(container);
 
-// キャラクターを一度描画してピクセルを取得する
 app.renderer.render(app.stage);
 const {
 	pixels,
@@ -35,76 +34,45 @@ ctx.putImageData(
 );
 const dataURL = tempCanvas.toDataURL("image/png");
 
-// 深度推定
-const worker = new Worker(
-	new URL("./models/depth-anything/inference.ts", import.meta.url),
-	{
-		type: "module",
-	},
-);
+const { sampleDepth, data, width, height } = await getDepth(dataURL);
 
-worker.postMessage(dataURL);
-
-worker.onmessage = (e) => {
-	console.log(e);
-
-	const depthCanvas = document.createElement("canvas");
-	depthCanvas.width = e.data.width;
-	depthCanvas.height = e.data.height;
-	const depthCtx = depthCanvas.getContext("2d");
-	if (depthCtx) {
-		const rgba = new Uint8ClampedArray(e.data.width * e.data.height * 4);
-		for (let i = 0; i < e.data.depth.length; i++) {
-			const v = e.data.depth[i];
-			rgba[i * 4 + 0] = v;
-			rgba[i * 4 + 1] = v;
-			rgba[i * 4 + 2] = v;
-			rgba[i * 4 + 3] = 255;
-		}
-		depthCtx.putImageData(
-			new ImageData(rgba, e.data.width, e.data.height),
-			0,
-			0,
-		);
+const depthCanvas = document.createElement("canvas");
+depthCanvas.width = width;
+depthCanvas.height = height;
+const depthCtx = depthCanvas.getContext("2d");
+if (depthCtx) {
+	const rgba = new Uint8ClampedArray(width * height * 4);
+	for (let i = 0; i < data.length; i++) {
+		const v = data[i];
+		rgba[i * 4 + 0] = v;
+		rgba[i * 4 + 1] = v;
+		rgba[i * 4 + 2] = v;
+		rgba[i * 4 + 3] = 255;
 	}
-	depthCanvas.className = "depth-preview";
-	document.body.appendChild(depthCanvas);
+	depthCtx.putImageData(new ImageData(rgba, width, height), 0, 0);
+}
+depthCanvas.className = "depth-preview";
+document.body.appendChild(depthCanvas);
 
-	function sampleDepth(u: number, v: number): number {
-		const px = Math.min(Math.floor(u * e.data.width), e.data.width - 1);
-		const py = Math.min(Math.floor(v * e.data.height), e.data.height - 1);
-		return e.data.depth[py * e.data.width + px] / 255; // 0~1に正規化
-	}
+const depthTemplate = DEPTH_TEMPLATE(sampleDepth, 80, 80);
 
-	const depthTemplate = DEPTH_TEMPLATE(sampleDepth, 40, 40);
+document.getElementById("loading")?.remove();
 
-	document.getElementById("loading")?.remove();
-
-	function scheduleNextBlink() {
-		const delay = 3000 + Math.random() * 2000;
-		setTimeout(() => {
-			blink();
-			scheduleNextBlink();
-		}, delay);
-	}
-	scheduleNextBlink();
-
-	const params = { x: 0.5, y: 0.5 };
-	window.addEventListener("mousemove", (e) => {
-		gsap.to(params, {
-			x: e.clientX / window.innerWidth,
-			y: e.clientY / window.innerHeight,
-			duration: 0.5,
-			ease: "sine.out",
-		});
+const params = { x: 0.5, y: 0.5 };
+window.addEventListener("mousemove", (e) => {
+	gsap.to(params, {
+		x: e.clientX / window.innerWidth,
+		y: e.clientY / window.innerHeight,
+		duration: 0.5,
+		ease: "sine.out",
 	});
+});
 
-	app.ticker.add(() => {
-		const rootPoses = [
-			lerpPose(depthTemplate.left, depthTemplate.right, params.x),
-			lerpPose(depthTemplate.up, depthTemplate.down, params.y),
-		];
+app.ticker.add(() => {
+	const rootPoses = [
+		lerpPose(depthTemplate.left, depthTemplate.right, params.x),
+		lerpPose(depthTemplate.up, depthTemplate.down, params.y),
+	];
 
-		root.apply(rootPoses);
-	});
-};
+	root.apply(rootPoses);
+});

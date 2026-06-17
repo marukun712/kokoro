@@ -1,8 +1,7 @@
-import { byPath, drawCharacter, groupNodes, Rig, walkPSD } from "@kokoro/rig";
+import { byPath, drawPNG, groupNodes, Rig } from "@kokoro/rig";
 import { Container } from "pixi.js";
 
-const index = await walkPSD("./models/character.psd");
-const nodes = drawCharacter(index);
+const nodes = await drawPNG("./public/models/character.png");
 export const container = new Container();
 for (const node of nodes) container.addChild(node.container);
 container.scale.set(0.1);

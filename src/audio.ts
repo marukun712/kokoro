@@ -2,7 +2,7 @@ import { curve, getSpatialParams, lerpPose, setupCanvas } from "@kokoro/rig";
 import gsap from "gsap";
 import { Viewport } from "pixi-viewport";
 import * as Tone from "tone";
-import { blink, container, root } from "./character";
+import { container, root } from "./character";
 import { POSE_TEMPLATE } from "./template";
 
 const audioCtx = new AudioContext();
@@ -88,15 +88,6 @@ document.getElementById("btn-capture")?.addEventListener(
 	},
 	{ once: true },
 );
-
-function scheduleNextBlink() {
-	const delay = 3000 + Math.random() * 2000;
-	setTimeout(() => {
-		blink();
-		scheduleNextBlink();
-	}, delay);
-}
-scheduleNextBlink();
 
 const VOLUME_TEMPLATE = (volume: number) => (u: number, v: number) => {
 	const { fromTop } = getSpatialParams(u, v);

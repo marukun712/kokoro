@@ -1,4 +1,5 @@
 export * from "./src/image/canvas";
+export * from "./src/image/png";
 export * from "./src/image/psd";
 export * from "./src/rig/matcher";
 export * from "./src/rig/rig";
