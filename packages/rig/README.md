@@ -311,7 +311,7 @@ PIXI の Container をキャプチャして深度推定を行い、`DepthResult`
 | `model` | `"small" \| "base" \| "large"` | モデルサイズ (デフォルト: `"base"`) |
 
 ```ts
-const depthResult = await getDepth(app.stage, app.renderer as PIXI.Renderer);
+const depthResult = await getDepth(container, app.renderer);
 ```
 
 #### `DepthResult`
@@ -327,7 +327,7 @@ const depthResult = await getDepth(app.stage, app.renderer as PIXI.Renderer);
 深度マップを使って左右・上下の視差ポーズを生成します。`TEMPLATE` と同じ形で `lerpPose` に渡せます。
 
 ```ts
-const DEPTH = DEPTH_TEMPLATE(depthResult.sampleDepth, 30, 20);
+const DEPTH = DEPTH_TEMPLATE(depthResult.sampleDepth, 80, 80);
 
 rig.apply([
   lerpPose(DEPTH.left, DEPTH.right, mouseX),
