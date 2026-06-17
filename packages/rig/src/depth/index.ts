@@ -1,4 +1,5 @@
 import type * as PIXI from "pixi.js";
+import type { Transform } from "../rig/rig";
 import { getSpatialParams } from "../utils/utils";
 
 /** `getDepth` の戻り値 */
@@ -89,22 +90,22 @@ export const DEPTH_TEMPLATE = (
 	scaleX: number,
 	scaleY: number,
 ) => ({
-	left: (u: number, v: number) => {
+	left: (u: number, v: number): Transform => {
 		const { fromTop } = getSpatialParams(u, v);
 		const d = sampleDepth(u, v);
 		return { tx: -d * scaleX * fromTop, ty: 0 };
 	},
-	right: (u: number, v: number) => {
+	right: (u: number, v: number): Transform => {
 		const { fromTop } = getSpatialParams(u, v);
 		const d = sampleDepth(u, v);
 		return { tx: d * scaleX * fromTop, ty: 0 };
 	},
-	up: (u: number, v: number) => {
+	up: (u: number, v: number): Transform => {
 		const { fromTop } = getSpatialParams(u, v);
 		const d = sampleDepth(u, v);
 		return { tx: 0, ty: -d * scaleY * fromTop };
 	},
-	down: (u: number, v: number) => {
+	down: (u: number, v: number): Transform => {
 		const { fromTop } = getSpatialParams(u, v);
 		const d = sampleDepth(u, v);
 		return { tx: 0, ty: d * scaleY * fromTop };
