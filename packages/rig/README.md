@@ -1,14 +1,11 @@
 # @kokoro/rig
 
-エンジニアファーストな人形キャラクター向けメッシュ変形ライブラリ
+エンジニアのための2Dキャラクターメッシュ変形ライブラリ
 
 ## コアコンセプト
 
-キャラクターの PSD ファイルを読み込み、レイヤーを PIXI スプライトとして描画し、毎フレームの頂点変形でアニメーションさせます。
-
-変形の基本単位は `Pose` です。`Pose` は `(u, v) => Transform` というシグネチャを持つ純粋関数で、各頂点の UV 座標を受け取り変形量を返します。複数の `Pose` をウェイト加算で合成でき、`lerpPose` で補間することで、マウス追従や揺れといったアニメーションを関数の組み合わせだけで表現できます。
-
-深度推定モジュール (`@kokoro/rig/depth`) はこの `Pose` 体系の拡張です。画像から推定した深度マップを `DEPTH_TEMPLATE` に渡すと、視差を再現する `Pose` が自動生成されます。
+`@kokoro/rig`は、エンジニアのための2Dキャラクターメッシュ変形ライブラリです。既存のツール・ライブラリはGUI操作を前提としており、表現としては豊かなものの、GUI・概念の学習コストが高く、すぐにキャラクターを動かすことができません。本ライブラリでは、キャラクターの変形に複雑な概念を用いません。キャラクターの変形は、すべて`(u,v) => 変形量`の関数として記述されます。ポーズの合成・補完も、関数を合成するような感覚で実装できます。
+さらに、深度推定モジュールと組み合わせることで、深度情報に基づいて各頂点の変形量が自動でスケールされます。
 
 ---
 
@@ -62,9 +59,15 @@ const layers = await walkPSD("/models/character.psd", {
 | `clipping` | `boolean` | クリッピングマスク対象か |
 | `hidden` | `boolean` | 非表示レイヤーか |
 
-### `drawPSD(layers)`
+### `drawPSD(layers, verticesX?, verticesY?)`
 
 `PSDIndex[]` から PIXI スプライト (`SpriteNode[]`) を生成して返します。各スプライトは `PIXI.MeshPlane` で作られており、頂点変形が可能です。
+
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `layers` | `PSDIndex[]` | `walkPSD` の戻り値 |
+| `verticesX` | `number` | メッシュの水平分割数 (デフォルト: `250`) |
+| `verticesY` | `number` | メッシュの垂直分割数 (デフォルト: `250`) |
 
 ```ts
 const nodes = drawPSD(layers);
@@ -82,9 +85,15 @@ for (const node of nodes) {
 | `container` | `PIXI.Container` | スプライトを包む Container |
 | `sprite` | `PIXI.MeshPlane` | メッシュ変形可能なスプライト本体 |
 
-### `drawPNG(url)`
+### `drawPNG(url, verticesX?, verticesY?)`
 
 PNG ファイルを取得して単一の `SpriteNode[]` として返します。PSD を使わない場合に使用します。
+
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `url` | `string` | PNG ファイルの URL |
+| `verticesX` | `number` | メッシュの水平分割数 (デフォルト: `250`) |
+| `verticesY` | `number` | メッシュの垂直分割数 (デフォルト: `250`) |
 
 ```ts
 const nodes = await drawPNG("/models/character.png");
@@ -292,9 +301,9 @@ switcher.apply({ "目_閉じ": true, "口_あ": false });
 
 ---
 
-## 深度推定変形 (オプション)
+## 深度推定変形
 
-`@kokoro/rig/depth` は `Pose` 体系の拡張モジュールです。Depth Anything V2 で画像から深度マップを推定し、`DEPTH_TEMPLATE` を使って視差を再現する `Pose` を生成します。
+`@kokoro/rig/depth`は、深度推定に基づいて各頂点の変形量をスケールさせるモジュールです。
 
 ```ts
 import { getDepth, DEPTH_TEMPLATE } from "@kokoro/rig/depth";
@@ -318,16 +327,16 @@ const depthResult = await getDepth(container, app.renderer);
 
 | プロパティ | 型 | 説明 |
 |---|---|---|
-| `sampleDepth` | `(u, v) => number` | UV 座標から深度値 (0~1) を取得する関数 |
-| `data` | `Uint8Array` | 深度マップの生ピクセルデータ |
-| `width`, `height` | `number` | 深度マップのサイズ |
+| `getDepthFromUV` | `(u, v) => number` | UV 座標から深度値 (0~1) を取得する関数 |
+| `details.data` | `Uint8Array` | 深度マップの生ピクセルデータ |
+| `details.width`, `details.height` | `number` | 深度マップのサイズ |
 
-### `DEPTH_TEMPLATE(sampleDepth, scaleX, scaleY)`
+### `DEPTH_TEMPLATE(depthFunc, scaleX, scaleY)`
 
 深度マップを使って左右・上下の視差ポーズを生成します。`TEMPLATE` と同じ形で `lerpPose` に渡せます。
 
 ```ts
-const DEPTH = DEPTH_TEMPLATE(depthResult.sampleDepth, 80, 80);
+const DEPTH = DEPTH_TEMPLATE(depthResult.getDepthFromUV, 80, 80);
 
 rig.apply([
   lerpPose(DEPTH.left, DEPTH.right, mouseX),

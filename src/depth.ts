@@ -17,10 +17,10 @@ app.stage.addChild(viewport);
 viewport.drag().pinch().wheel();
 viewport.addChild(container);
 
-const { sampleDepth, data, width, height } = await getDepth(
-	container,
-	app.renderer,
-);
+const {
+	getDepthFromUV,
+	details: { data, width, height },
+} = await getDepth(container, app.renderer);
 
 const depthCanvas = document.createElement("canvas");
 depthCanvas.width = width;
@@ -40,7 +40,7 @@ if (depthCtx) {
 depthCanvas.className = "depth-preview";
 document.body.appendChild(depthCanvas);
 
-const depthTemplate = DEPTH_TEMPLATE(sampleDepth, 80, 80);
+const depthTemplate = DEPTH_TEMPLATE(getDepthFromUV, 80, 80);
 
 document.getElementById("loading")?.remove();
 
