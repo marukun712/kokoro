@@ -18,10 +18,34 @@
     canvas {
       display: block;
     }
+
+    .repo-card {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 100;
+      background: rgba(20, 20, 20, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+      line-height: 1.5;
+      color: #ccc;
+      backdrop-filter: blur(4px);
+    }
+
+    .repo-card a {
+      color: #aaa;
+    }
   </style>
 </head>
 
 <body>
+  <div class="repo-card">
+    <div><a href="https://github.com/marukun712/kokoro">@kokoro/rig</a> で動いています</div>
+    <div> エンジニアファーストな人形キャラクター向けメッシュ変形ライブラリです。</div>
+    <div>コントリビューション・star をお待ちしています</div>
+  </div>
   <script type="module" src="./src/main.ts"></script>
 </body>
 
