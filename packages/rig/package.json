@@ -1,6 +1,5 @@
 {
 	"name": "@kokoro/rig",
-	"private": true,
 	"type": "module",
 	"exports": {
 		".": "./index.ts",
