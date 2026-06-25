@@ -1,9 +1,0 @@
-{
-	"name": "@kokoro/rig",
-	"version": "0.7.6",
-	"license": "MIT",
-	"exports": {
-		".": "./index.ts",
-		"./depth": "./depth.ts"
-	}
-}
