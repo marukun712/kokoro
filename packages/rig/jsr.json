@@ -1,12 +1,9 @@
 {
 	"name": "@kokoro/rig",
-	"version": "0.7.6",
+	"version": "0.7.7",
 	"license": "MIT",
 	"exports": {
 		".": "./index.ts",
 		"./depth": "./depth.ts"
-	},
-	"imports": {
-		"@huggingface/transformers": "@huggingface/transformers@^4.2.0"
 	}
 }
