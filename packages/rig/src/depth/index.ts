@@ -51,7 +51,7 @@ export async function getDepth(
 	const dataURL = tempCanvas.toDataURL("image/png");
 
 	return new Promise((resolve, reject) => {
-		const url = new URL("./worker.ts", import.meta.url);
+		const url = new URL("./worker.js", import.meta.url);
 
 		const worker = new Worker(url, {
 			type: "module",
