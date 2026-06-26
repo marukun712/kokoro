@@ -8,7 +8,7 @@
 	],
 	"scripts": {
 		"dev": "vite",
-		"build": "tsc && vite build",
+		"build": "bun run --cwd packages/rig build:worker && tsc && vite build",
 		"preview": "vite preview",
 		"psd": "bun psd.ts ./public/models/character.psd"
 	},
