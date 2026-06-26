@@ -1,6 +1,10 @@
 {
 	"name": "@kokoro/rig",
 	"type": "module",
+	"scripts": {
+		"publish": "bun run build:worker && bunx jsr publish",
+		"build:worker": "bun build src/depth/worker.ts --outdir src/depth --target browser"
+	},
 	"exports": {
 		".": "./index.ts",
 		"./depth": "./depth.ts"
