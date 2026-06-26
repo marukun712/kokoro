@@ -3,7 +3,7 @@
 	"type": "module",
 	"scripts": {
 		"publish": "bun run build:worker && bunx jsr publish",
-		"build:worker": "bun build src/depth/worker.ts --outdir src/depth --target browser"
+		"build:worker": "bun build src/depth/worker.ts --outfile dist/worker.js --target browser"
 	},
 	"exports": {
 		".": "./index.ts",

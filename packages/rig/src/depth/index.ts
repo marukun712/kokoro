@@ -1,7 +1,7 @@
 import type * as PIXI from "pixi.js";
+import workerUrl from "../../dist/worker.js?url";
 import type { Transform } from "../rig/rig";
 import { getSpatialParams } from "../utils/utils";
-import type {} from "./worker.ts";
 
 /** `getDepth` の戻り値 */
 export interface DepthResult {
@@ -52,9 +52,7 @@ export async function getDepth(
 	const dataURL = tempCanvas.toDataURL("image/png");
 
 	return new Promise((resolve, reject) => {
-		const url = new URL("./worker.js", import.meta.url);
-
-		const worker = new Worker(url, {
+		const worker = new Worker(workerUrl, {
 			type: "module",
 		});
 
