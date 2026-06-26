@@ -1,6 +1,7 @@
 import type * as PIXI from "pixi.js";
 import type { Transform } from "../rig/rig";
 import { getSpatialParams } from "../utils/utils";
+import type {} from "./worker.ts";
 
 /** `getDepth` の戻り値 */
 export interface DepthResult {
