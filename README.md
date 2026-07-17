@@ -5,7 +5,7 @@
 
 ## DEMO
 
-https://github.com/marukun712/kokoro
+https://marukun712.github.io/kokoro/
 
 ---
 
