@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.zinc.min.css">
+  <title>kokoro - animation DSL</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    #loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      font-size: 1.2rem;
+      z-index: 10;
+    }
+
+    #controls {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    #controls button {
+      margin: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="loading">depth model loading...</div>
+  <div id="controls"></div>
+  <script type="module" src="./src/anim_demo.ts"></script>
+</body>
+
+</html>
