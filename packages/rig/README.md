@@ -231,19 +231,23 @@ const tilt: Pose = (u, v) => {
 
 UV 座標から頂点の空間的な位置パラメータを返します。`Pose` 内でウェイト計算に使います。
 
-| 戻り値フィールド | 説明 |
-|---|---|
-| `fromTop` | 上端に近いほど大きい値 (0=下, 1=上)。`1 - v` |
-| `fromBottom` | 下端に近いほど大きい値 (0=上, 1=下)。`v` |
-| `fromLeft` | 左端からの距離 (0=左, 1=右) |
-| `fromRight` | 右端からの距離 (0=右, 1=左) |
-| `fromCenterX` | 中心 X からのオフセット (-0.5~0.5) |
-| `fromCenterY` | 中心 Y からの距離 (0=中心, 1=端) |
-| `isUpperBody` | 上半身か否か (v < 0.5) |
+戻り値の型は `SpatialParams` です。
+
+#### `SpatialParams`
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| `fromTop` | `number` | 上端に近いほど大きい値 (0=下, 1=上)。`1 - v` |
+| `fromBottom` | `number` | 下端に近いほど大きい値 (0=上, 1=下)。`v` |
+| `fromLeft` | `number` | 左端からの距離 (0=左, 1=右) |
+| `fromRight` | `number` | 右端からの距離 (0=右, 1=左) |
+| `fromCenterX` | `number` | 中心 X からのオフセット (-0.5~0.5) |
+| `fromCenterY` | `number` | 中心 Y からの距離 (0=中心, 1=端) |
+| `isUpperBody` | `boolean` | 上半身か否か (v < 0.5) |
 
 ### `curve`
 
-イージング関数の辞書です。`getSpatialParams` で得た値をウェイトへ変換する際に使います。
+イージング関数の辞書です。`getSpatialParams` で得た値をウェイトへ変換する際に使います。型は `Curve = (t: number) => number` です。
 
 | キー | イージング |
 |---|---|
@@ -256,6 +260,13 @@ const { fromBottom } = getSpatialParams(u, v);
 return { tx: -50 * curve.power2(fromBottom), ty: 0 };
 ```
 
+### 型エイリアス
+
+| 型 | シグネチャ | 説明 |
+|---|---|---|
+| `Curve` | `(t: number) => number` | イージング関数。`getSpatialParams` の戻り値をウェイトへ変換する際に使う |
+| `Guard` | `(t: number) => boolean` | 条件を満たすか返す述語関数。ポーズの適用範囲を限定するガード条件に使う |
+
 ---
 
 ## lerpPose - ポーズの補間
@@ -267,6 +278,67 @@ rig.apply([
   lerpPose(TEMPLATE.left, TEMPLATE.right, mouseX),
   lerpPose(TEMPLATE.up, TEMPLATE.down, mouseY),
 ]);
+```
+
+---
+
+## Animation - キーフレームアニメーション
+
+```ts
+import { loop, seq } from "@kokoro/rig";
+```
+
+### 型
+
+#### `Animation`
+
+```ts
+type Animation = (t: number) => Pose[];
+```
+
+絶対秒数 `t` を受け取り、そのフレームで適用する `Pose[]` を返す関数型です。`Rig.apply` に渡せる形式を返します。
+
+#### `Clip`
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| `duration` | `number` | このクリップの再生時間 (秒) |
+| `pose` | `Pose` | 遷移先のポーズ |
+| `ease` | `(t: number) => number` (省略可) | 補間係数 (0~1) を変換するイージング関数。省略時は線形 |
+
+### `loop(anim, duration)`
+
+`anim` を `duration` 秒周期でループする `Animation` を返します。
+
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `anim` | `Animation` | ループさせる元のアニメーション |
+| `duration` | `number` | ループ周期 (秒) |
+
+```ts
+const looped = loop(seq([
+  { duration: 0.5, pose: POSE_A },
+  { duration: 0.5, pose: POSE_B },
+]), 1.0);
+
+app.ticker.add(() => {
+  rig.apply(looped(app.ticker.lastTime / 1000));
+});
+```
+
+### `seq(clips)`
+
+`Clip[]` のキーフレーム列を順番に補間する `Animation` を返します。各クリップは「前のポーズからこのポーズへ `duration` 秒かけて遷移する」を意味します。先頭クリップの遷移元は末尾クリップのポーズになるため、`loop` と組み合わせると自然につながります。
+
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `clips` | `Clip[]` | キーフレームの配列 |
+
+```ts
+const breathe = loop(seq([
+  { duration: 1.0, pose: POSE_EXHALE, ease: curve.power2 },
+  { duration: 1.0, pose: POSE_INHALE, ease: curve.power2 },
+]), 2.0);
 ```
 
 ---
@@ -317,7 +389,13 @@ PIXI の Container をキャプチャして深度推定を行い、`DepthResult`
 |---|---|---|
 | `container` | `PIXI.Container` | キャプチャ対象 |
 | `renderer` | `PIXI.Renderer` | ピクセル抽出に使用 |
-| `model` | `"small" \| "base" \| "large"` | モデルサイズ (デフォルト: `"base"`) |
+| `model` | `DepthModelSize` | モデルサイズ (デフォルト: `"base"`) |
+
+#### `DepthModelSize`
+
+```ts
+type DepthModelSize = "small" | "base" | "large";
+```
 
 ```ts
 const depthResult = await getDepth(container, app.renderer);

@@ -29,7 +29,8 @@ export function seq(clips: Clip[]): Animation {
 			const end = elapsed + clips[i].duration;
 			if (t < end) {
 				const raw = (t - elapsed) / clips[i].duration;
-				const w = clips[i].ease ? clips[i].ease(raw) : raw;
+				const ease = clips[i].ease;
+				const w = ease ? ease(raw) : raw;
 				const from = i > 0 ? clips[i - 1].pose : clips[clips.length - 1].pose;
 				return [lerpPose(from, clips[i].pose, w)];
 			}
