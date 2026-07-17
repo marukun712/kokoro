@@ -143,6 +143,52 @@ const surprised = then(
 	idle,
 );
 
+const sway = loop(
+	seq([
+		{ duration: 1.2, pose: tilt(0.08), ease: easeInOut },
+		{ duration: 1.2, pose: tilt(-0.08), ease: easeInOut },
+	]),
+	2.4,
+);
+
+const wiggle = loop(
+	seq([
+		{ duration: 0.15, pose: tilt(0.05), ease: easeInOut },
+		{ duration: 0.15, pose: tilt(-0.05), ease: easeInOut },
+	]),
+	0.3,
+);
+
+const excited = loop(
+	seq([
+		{ duration: 0.15, pose: sink(5), ease: easeInOut },
+		{ duration: 0.15, pose: rest, ease: easeInOut },
+	]),
+	0.3,
+);
+
+const sleepy = loop(
+	seq([
+		{ duration: 2, pose: scale(template.down, 0.7), ease: easeInOut },
+		{ duration: 0.8, pose: scale(template.down, 0.9), ease: easeInOut },
+		{ duration: 0.25, pose: rest, ease: easeOut },
+		{ duration: 1, pose: rest },
+	]),
+	4.05,
+);
+
+const stretchUp = add(sink(-12), scale(template.up, 0.3));
+
+const stretch = then(
+	seq([
+		{ duration: 0.6, pose: stretchUp, ease: easeInOut },
+		{ duration: 0.8, pose: stretchUp },
+		{ duration: 0.5, pose: rest, ease: easeInOut },
+	]),
+	1.9,
+	idle,
+);
+
 const deepBow = add(scale(template.down, 1.6), sink(6));
 
 const bow = then(
@@ -166,6 +212,11 @@ const clips: { label: string; anim: Animation }[] = [
 	{ label: "sad", anim: sad },
 	{ label: "surprised", anim: surprised },
 	{ label: "bow", anim: bow },
+	{ label: "sway", anim: sway },
+	{ label: "wiggle", anim: wiggle },
+	{ label: "excited", anim: excited },
+	{ label: "sleepy", anim: sleepy },
+	{ label: "stretch", anim: stretch },
 ];
 
 let currentAnim: Animation = idle;
