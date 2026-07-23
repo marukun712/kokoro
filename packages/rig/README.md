@@ -61,7 +61,7 @@ const layers = await walkPSD("/models/character.psd", {
 
 ### `drawPSD(layers, verticesX?, verticesY?)`
 
-`PSDIndex[]` から PIXI スプライト (`SpriteNode[]`) を生成して返します。各スプライトは `PIXI.MeshPlane` で作られており、頂点変形が可能です。
+`PSDIndex[]` から PIXI スプライト (`SpriteNode[]`) を生成して返します。各スプライトは `PIXI.MeshPlane` で作られており、頂点変形が可能です。クリッピングマスク対象のレイヤー (`clipping: true`) はスキップされます。
 
 | 引数 | 型 | 説明 |
 |---|---|---|
@@ -378,7 +378,7 @@ switcher.apply({ "目_閉じ": true, "口_あ": false });
 `@kokoro/rig/depth`は、深度推定に基づいて各頂点の変形量をスケールさせるモジュールです。
 
 ```ts
-import { getDepth, DEPTH_TEMPLATE } from "@kokoro/rig/depth";
+import { getDepth, injectDepth } from "@kokoro/rig/depth";
 ```
 
 ### `getDepth(container, renderer, model?)`
@@ -409,15 +409,20 @@ const depthResult = await getDepth(container, app.renderer);
 | `details.data` | `Uint8Array` | 深度マップの生ピクセルデータ |
 | `details.width`, `details.height` | `number` | 深度マップのサイズ |
 
-### `DEPTH_TEMPLATE(depthFunc, scaleX, scaleY)`
+### `injectDepth(template, depthFunc)`
 
-深度マップを使って左右・上下の視差ポーズを生成します。`TEMPLATE` と同じ形で `lerpPose` に渡せます。
+既存のポーズテンプレートに深度スケールを注入します。各ポーズの `tx` / `ty` が UV 座標の深度値 (0~1) で乗算され、手前の頂点ほど大きく動くようになります。
+
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `template` | `Record<string, Pose>` | 注入対象のポーズテンプレート |
+| `depthFunc` | `(u, v) => number` | UV 座標から深度値 (0~1) を返す関数 (`DepthResult.getDepthFromUV`) |
 
 ```ts
-const DEPTH = DEPTH_TEMPLATE(depthResult.getDepthFromUV, 80, 80);
+const depthTemplate = injectDepth(POSE_TEMPLATE, depthResult.getDepthFromUV);
 
 rig.apply([
-  lerpPose(DEPTH.left, DEPTH.right, mouseX),
-  lerpPose(DEPTH.up, DEPTH.down, mouseY),
+  lerpPose(depthTemplate.left, depthTemplate.right, mouseX),
+  lerpPose(depthTemplate.up, depthTemplate.down, mouseY),
 ]);
 ```

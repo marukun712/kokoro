@@ -22,7 +22,6 @@ export default defineConfig({
 				audio: resolve(import.meta.dirname, "audio.html"),
 				template: resolve(import.meta.dirname, "template.html"),
 				depth: resolve(import.meta.dirname, "depth.html"),
-				anim: resolve(import.meta.dirname, "anim.html"),
 			},
 		},
 	},

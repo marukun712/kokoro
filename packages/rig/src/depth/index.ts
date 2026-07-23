@@ -1,6 +1,5 @@
 import type * as PIXI from "pixi.js";
-import type { Transform } from "../rig/rig";
-import { getSpatialParams } from "../utils/utils";
+import type { Pose } from "../rig/rig";
 
 /** `getDepth` の戻り値 */
 export interface DepthResult {
@@ -82,37 +81,25 @@ export async function getDepth(
 }
 
 /**
- * 深度マップを使って左右・上下の視差ポーズを生成するテンプレート。
- * 深度値が大きいほど (手前にあるほど) 変形量が大きくなる。
+ * 任意のポーズテンプレートに深度スケールを注入する。
+ * 各ポーズの tx / ty が UV 座標の深度値 (0~1) で乗算される。
  *
+ * @param template  - 注入対象のポーズテンプレート
  * @param depthFunc - UV 座標から深度値 (0~1) を返す関数 ({@link DepthResult.getDepthFromUV})
- * @param scaleX    - X 方向の最大移動量 (px)
- * @param scaleY    - Y 方向の最大移動量 (px)
- * @returns `left` / `right` / `up` / `down` の {@link Transform} を返す関数を持つオブジェクト
+ * @returns 深度スケール済みの同形テンプレート
  */
-export const DEPTH_TEMPLATE = (
+export function injectDepth(
+	template: Record<string, Pose>,
 	depthFunc: (u: number, v: number) => number,
-	scaleX: number,
-	scaleY: number,
-) => ({
-	left: (u: number, v: number): Transform => {
-		const { fromTop } = getSpatialParams(u, v);
-		const d = depthFunc(u, v);
-		return { tx: -d * scaleX * fromTop, ty: 0 };
-	},
-	right: (u: number, v: number): Transform => {
-		const { fromTop } = getSpatialParams(u, v);
-		const d = depthFunc(u, v);
-		return { tx: d * scaleX * fromTop, ty: 0 };
-	},
-	up: (u: number, v: number): Transform => {
-		const { fromTop } = getSpatialParams(u, v);
-		const d = depthFunc(u, v);
-		return { tx: 0, ty: -d * scaleY * fromTop };
-	},
-	down: (u: number, v: number): Transform => {
-		const { fromTop } = getSpatialParams(u, v);
-		const d = depthFunc(u, v);
-		return { tx: 0, ty: d * scaleY * fromTop };
-	},
-});
+) {
+	const result = {} as Record<string, Pose>;
+	for (const key in template) {
+		const original = template[key];
+		result[key] = (u: number, v: number) => {
+			const transform = original(u, v);
+			const d = depthFunc(u, v);
+			return { ...transform, tx: transform.tx * d, ty: transform.ty * d };
+		};
+	}
+	return result;
+}

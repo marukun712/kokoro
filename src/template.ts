@@ -1,4 +1,4 @@
-import { type Curve, curve, getSpatialParams } from "@kokoro/rig";
+import { curve, getSpatialParams } from "@kokoro/rig";
 
 export const POSE_TEMPLATE = {
 	left: (u: number, v: number) => {
@@ -6,7 +6,7 @@ export const POSE_TEMPLATE = {
 		const w = curve.power2(fromTop);
 
 		return {
-			tx: -200 * w,
+			tx: -100 * w,
 			ty: 0,
 		};
 	},
@@ -16,30 +16,28 @@ export const POSE_TEMPLATE = {
 		const w = curve.power2(fromTop);
 
 		return {
-			tx: 200 * w,
+			tx: 100 * w,
 			ty: 0,
 		};
 	},
 
 	up: (u: number, v: number) => {
 		const { fromTop } = getSpatialParams(u, v);
-		const chestCurve: Curve = (t: number) => Math.sin(t * Math.PI);
-		const w = chestCurve(fromTop);
+		const w = curve.power2(fromTop);
 
 		return {
 			tx: 0,
-			ty: -20 * w,
+			ty: -100 * w,
 		};
 	},
 
 	down: (u: number, v: number) => {
 		const { fromTop } = getSpatialParams(u, v);
-		const chestCurve: Curve = (t: number) => Math.sin(t * Math.PI);
-		const w = chestCurve(fromTop);
+		const w = curve.power2(fromTop);
 
 		return {
 			tx: 0,
-			ty: 20 * w,
+			ty: 100 * w,
 		};
 	},
 };
