@@ -9,7 +9,11 @@ export type Animation = (t: number) => Pose[];
  * Agent が指定するポーズ表現。
  * テンプレート名の文字列、または2つのテンプレートを `t` (0~1) で補間した中間ポーズ。
  */
-export const PoseExprSchema = z.union([
+export type PoseExpr = string | { lerp: [string, string]; t: number };
+export type AgentClip = { pose: PoseExpr; duration: number; ease?: string };
+export type AgentSeq = AgentClip[];
+
+export const PoseExprSchema: z.ZodType<PoseExpr> = z.union([
 	z.string(),
 	z.object({ lerp: z.tuple([z.string(), z.string()]), t: z.number() }),
 ]);
@@ -18,18 +22,14 @@ export const PoseExprSchema = z.union([
  * Agent が組み立てるアニメーションの1クリップ。
  * `pose` へ `duration` 秒かけて遷移する。
  */
-export const AgentClipSchema = z.object({
+export const AgentClipSchema: z.ZodType<AgentClip> = z.object({
 	pose: PoseExprSchema,
 	duration: z.number(),
 	ease: z.string().optional(),
 });
 
 /** Agent が MCP 経由で送るアニメーションシーケンス。`safeParse` で検証して使う。 */
-export const AgentSeqSchema = z.array(AgentClipSchema);
-
-export type PoseExpr = z.infer<typeof PoseExprSchema>;
-export type AgentClip = z.infer<typeof AgentClipSchema>;
-export type AgentSeq = z.infer<typeof AgentSeqSchema>;
+export const AgentSeqSchema: z.ZodType<AgentSeq> = z.array(AgentClipSchema);
 
 export type Clip = {
 	duration: number;

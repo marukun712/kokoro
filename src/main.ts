@@ -33,8 +33,8 @@ window.addEventListener("mousemove", (e) => {
 
 app.ticker.add(() => {
 	const rootPoses = [
-		lerpPose(POSE_TEMPLATE.left, POSE_TEMPLATE.right, params.x),
-		lerpPose(POSE_TEMPLATE.up, POSE_TEMPLATE.down, params.y),
+		lerpPose(POSE_TEMPLATE().left, POSE_TEMPLATE().right, params.x),
+		lerpPose(POSE_TEMPLATE().up, POSE_TEMPLATE().down, params.y),
 	];
 
 	root.apply(rootPoses);

@@ -100,8 +100,8 @@ app.ticker.add(() => {
 	const { low } = audioCtx.state === "running" ? readBands() : { low: 0 };
 
 	const rootPoses = [
-		lerpPose(POSE_TEMPLATE.left, POSE_TEMPLATE.right, params.x),
-		lerpPose(POSE_TEMPLATE.up, POSE_TEMPLATE.down, params.y),
+		lerpPose(POSE_TEMPLATE().left, POSE_TEMPLATE().right, params.x),
+		lerpPose(POSE_TEMPLATE().up, POSE_TEMPLATE().down, params.y),
 		VOLUME_TEMPLATE(low),
 	];
 
