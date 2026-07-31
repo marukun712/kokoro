@@ -9,7 +9,7 @@ export type Animation = (t: number) => Pose[];
  * Agent が指定するポーズ表現。
  * テンプレート名の文字列、または2つのテンプレートを `t` (0~1) で補間した中間ポーズ。
  */
-const PoseExprSchema = z.union([
+export const PoseExprSchema = z.union([
 	z.string(),
 	z.object({ lerp: z.tuple([z.string(), z.string()]), t: z.number() }),
 ]);
@@ -18,7 +18,7 @@ const PoseExprSchema = z.union([
  * Agent が組み立てるアニメーションの1クリップ。
  * `pose` へ `duration` 秒かけて遷移する。
  */
-const AgentClipSchema = z.object({
+export const AgentClipSchema = z.object({
 	pose: PoseExprSchema,
 	duration: z.number(),
 	ease: z.string().optional(),

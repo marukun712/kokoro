@@ -91,7 +91,7 @@ export async function getDepth(
 export function injectDepth(
 	template: Record<string, Pose>,
 	depthFunc: (u: number, v: number) => number,
-) {
+): Record<string, Pose> {
 	const result = {} as Record<string, Pose>;
 	for (const key in template) {
 		const original = template[key];
