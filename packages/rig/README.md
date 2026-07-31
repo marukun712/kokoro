@@ -373,6 +373,61 @@ switcher.apply({ "目_閉じ": true, "口_あ": false });
 
 ---
 
+## AI Agent 連携 - resolveAgentSeq / AgentSeqSchema
+
+MCP サーバー経由で AI Agent からアニメーションを受け取る際に使います。
+
+```ts
+import { AgentSeqSchema, resolveAgentSeq } from "@kokoro/rig";
+```
+
+#### `PoseExpr`
+
+| 形式 | 説明 |
+|---|---|
+| `string` | テンプレート名。`POSE_TEMPLATE["name"]` を参照する |
+| `{ lerp: [string, string], t: number }` | 2つのテンプレートを `t` (0~1) で補間した中間ポーズを作る |
+
+#### `AgentClip`
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| `pose` | `PoseExpr` | 遷移先のポーズ |
+| `duration` | `number` | 遷移にかける時間 (秒) |
+| `ease` | `string` (省略可) | イージング名。`"linear"` / `"easeIn"` / `"easeOut"` / `"easeInOut"` |
+
+#### `AgentSeq`
+
+`AgentClip[]` の配列です。
+
+### `AgentSeqSchema`
+
+Zod スキーマです。SSE などで受け取った未検証の JSON を `safeParse` で検証してから `resolveAgentSeq` に渡してください。
+
+```ts
+const result = AgentSeqSchema.safeParse(JSON.parse(raw));
+if (!result.success) return;
+const anim = resolveAgentSeq(POSE_TEMPLATE, result.data);
+```
+
+### `resolveAgentSeq(template, agentSeq)`
+
+`AgentSeq` を `Animation` に変換します。
+
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `template` | `Record<string, Pose>` | テンプレート名と `Pose` のマップ |
+| `agentSeq` | `AgentSeq` | `AgentSeqSchema.safeParse` で検証済みのシーケンス |
+
+```ts
+app.ticker.add(() => {
+  const elapsed = (performance.now() - animStart) / 1000;
+  rig.apply(anim(elapsed));
+});
+```
+
+---
+
 ## 深度推定変形
 
 `@kokoro/rig/depth`は、深度推定に基づいて各頂点の変形量をスケールさせるモジュールです。

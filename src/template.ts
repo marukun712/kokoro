@@ -1,12 +1,12 @@
 import { curve, getSpatialParams } from "@kokoro/rig";
 
-export const POSE_TEMPLATE = {
+export const POSE_TEMPLATE = (scale: number = 1) => ({
 	left: (u: number, v: number) => {
 		const { fromTop } = getSpatialParams(u, v);
 		const w = curve.power2(fromTop);
 
 		return {
-			tx: -100 * w,
+			tx: -100 * w * scale,
 			ty: 0,
 		};
 	},
@@ -16,7 +16,7 @@ export const POSE_TEMPLATE = {
 		const w = curve.power2(fromTop);
 
 		return {
-			tx: 100 * w,
+			tx: 100 * w * scale,
 			ty: 0,
 		};
 	},
@@ -27,7 +27,7 @@ export const POSE_TEMPLATE = {
 
 		return {
 			tx: 0,
-			ty: -100 * w,
+			ty: -100 * w * scale,
 		};
 	},
 
@@ -37,10 +37,10 @@ export const POSE_TEMPLATE = {
 
 		return {
 			tx: 0,
-			ty: 100 * w,
+			ty: 100 * w * scale,
 		};
 	},
-};
+});
 
 export const HAIR_TEMPLATE = {
 	leftFront: (u: number, v: number) => {

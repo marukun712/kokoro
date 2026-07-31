@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.zinc.min.css">
+  <title>kokoro - agent</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    .depth-preview {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      width: 200px;
+      height: auto;
+      opacity: 0.85;
+      z-index: 5;
+    }
+
+    #loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      font-size: 1.2rem;
+      z-index: 10;
+    }
+
+    .repo-card {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 100;
+      background: rgba(20, 20, 20, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+      line-height: 1.5;
+      color: #ccc;
+      backdrop-filter: blur(4px);
+    }
+
+    .repo-card a {
+      color: #aaa;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="loading">depth model loading...</div>
+  <div class="repo-card">
+    <div><a href="https://github.com/marukun712/kokoro">@kokoro/rig</a>で動いています。</div>
+    <div>エンジニアのための2Dキャラクターメッシュ変形ライブラリです。</div>
+    <div>コントリビューション・star をお待ちしています！</div>
+  </div>
+  <script type="module" src="./src/agent.ts"></script>
+</body>
+
+</html>
