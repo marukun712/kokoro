@@ -20,7 +20,7 @@ viewport.addChild(container);
 
 const { getDepthFromUV } = await getDepth(container, app.renderer);
 
-const depthTemplate = injectDepth(POSE_TEMPLATE(), getDepthFromUV);
+const depthTemplate = injectDepth(POSE_TEMPLATE(3), getDepthFromUV);
 
 document.getElementById("loading")?.remove();
 
