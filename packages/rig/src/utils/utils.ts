@@ -22,7 +22,7 @@ export interface MeshPosition {
 	isUpperBody: boolean;
 }
 
-export function getMeshPosition(u: number, v: number) {
+export function getMeshPosition(u: number, v: number): MeshPosition {
 	return {
 		fromTop: 1 - v,
 		fromBottom: v,
