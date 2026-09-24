@@ -6,7 +6,7 @@
   <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.zinc.min.css">
-  <title>kokoro - audio</title>
+  <title>kokoro - depth video parallax</title>
   <style>
     html,
     body {
@@ -17,6 +17,18 @@
 
     canvas {
       display: block;
+    }
+
+    #loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      font-size: 1.2rem;
+      z-index: 10;
     }
 
     .repo-card {
@@ -41,17 +53,13 @@
 </head>
 
 <body>
-  <div
-    style="position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); display: flex; gap: 0.5rem; z-index: 10;">
-    <button type="button" id="btn-capture">capture</button>
-    <button type="button" id="btn-low">low</button>
-  </div>
+  <div id="loading">video loading...</div>
   <div class="repo-card">
     <div><a href="https://github.com/marukun712/kokoro">@kokoro/rig</a>で動いています。</div>
     <div>エンジニアのための2Dキャラクターメッシュ変形ライブラリです。</div>
     <div>コントリビューション・star をお待ちしています！</div>
   </div>
-  <script type="module" src="./src/audio.ts"></script>
+  <script type="module" src="./src/depth-video.ts"></script>
 </body>
 
 </html>

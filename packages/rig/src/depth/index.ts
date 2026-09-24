@@ -1,32 +1,38 @@
 import type * as PIXI from "pixi.js";
 import type { Pose } from "../rig/rig";
 
-/** `getDepth` の戻り値 */
 export interface DepthResult {
-	/** UV 座標から深度値 (0~1) を取得する関数 */
-	getDepthFromUV: (u: number, v: number) => number;
-	details: {
-		/** 深度マップの生ピクセルデータ */
-		data: Uint8Array;
-		/** 深度マップの幅 (px) */
-		width: number;
-		/** 深度マップの高さ (px) */
-		height: number;
+	data: Uint8Array;
+	width: number;
+	height: number;
+}
+
+export type DepthModelSize = "small" | "base" | "large";
+
+export function uvToDepth(
+	data: Uint8Array,
+	width: number,
+	height: number,
+): (u: number, v: number) => number {
+	return (u: number, v: number): number => {
+		const px = Math.min(Math.floor(u * width), width - 1);
+		const py = Math.min(Math.floor(v * height), height - 1);
+		return data[py * width + px] / 255;
 	};
 }
 
-/** 深度推定モデルのサイズ */
-export type DepthModelSize = "small" | "base" | "large";
+export function extractDepth(
+	container: PIXI.Container,
+	renderer: PIXI.Renderer,
+): { data: Uint8Array; width: number; height: number } {
+	const { pixels, width, height } = renderer.extract.pixels(container);
+	const data = new Uint8Array(width * height);
+	for (let i = 0; i < width * height; i++) {
+		data[i] = pixels[i * 4];
+	}
+	return { data, width, height };
+}
 
-/**
- * PIXI の Container をキャプチャして深度推定を実行し、深度マップを返す。
- * 推論は Web Worker 上で行われる。
- *
- * @param container - キャプチャ対象の PIXI.Container
- * @param renderer  - PIXI.Renderer (ピクセル抽出に使用)
- * @param model     - 使用するモデルサイズ (デフォルト: "base")
- * @returns {@link DepthResult}
- */
 export async function getDepth(
 	container: PIXI.Container,
 	renderer: PIXI.Renderer,
@@ -66,13 +72,7 @@ export async function getDepth(
 				height: number;
 			};
 
-			const getDepthFromUV = (u: number, v: number): number => {
-				const px = Math.min(Math.floor(u * width), width - 1);
-				const py = Math.min(Math.floor(v * height), height - 1);
-				return depth[py * width + px] / 255;
-			};
-
-			resolve({ getDepthFromUV, details: { data: depth, width, height } });
+			resolve({ data: depth, width, height });
 			worker.terminate();
 		};
 
@@ -80,15 +80,7 @@ export async function getDepth(
 	});
 }
 
-/**
- * 任意のポーズテンプレートに深度スケールを注入する。
- * 各ポーズの tx / ty が UV 座標の深度値 (0~1) で乗算される。
- *
- * @param template  - 注入対象のポーズテンプレート
- * @param depthFunc - UV 座標から深度値 (0~1) を返す関数 ({@link DepthResult.getDepthFromUV})
- * @returns 深度スケール済みの同形テンプレート
- */
-export function injectDepth(
+export function injectDepthToPose(
 	template: Record<string, Pose>,
 	depthFunc: (u: number, v: number) => number,
 ): Record<string, Pose> {

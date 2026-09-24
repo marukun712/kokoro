@@ -1,33 +1,17 @@
 import type { SpriteNode } from "../image/psd";
 
-/** 1フレームの変形量 */
 export interface Transform {
-	/** X 方向の平行移動量 (ピクセル) */
 	tx: number;
-	/** Y 方向の平行移動量 (ピクセル) */
 	ty: number;
-	/** 回転量 (ラジアン) */
 	rot?: number;
-	/** 回転の起点 (UV座標) */
 	pivot?: { u: number; v: number };
 }
 
-/**
- * 頂点の UV 座標を受け取り、その頂点の変形量 ({@link Transform}) を返す純粋関数。
- * 複数の `Pose` を `Rig.apply` に渡すとウェイト加算で合成される。
- */
 export type Pose = (u: number, v: number) => Transform;
 
-/**
- * ノード群の頂点を毎フレーム書き換えてメッシュ変形を行うクラス。
- * コンストラクタでバウンディングボックスを計算し、UV 正規化の基準として使う。
- */
 export class Rig {
-	/** ローカル座標の初期頂点バッファ */
 	private readonly origVerts: Float32Array;
-	/** ワールド座標の初期頂点バッファ */
 	private readonly globalOrigVerts: Float32Array;
-	/** 変形後の頂点バッファ */
 	private readonly verts: Float32Array;
 
 	private readonly nodeRanges: Array<{
@@ -42,7 +26,6 @@ export class Rig {
 	readonly h: number;
 
 	constructor(nodes: SpriteNode[]) {
-		// 全ノードの頂点数を集計してバッファを確保
 		let total = 0;
 		for (const node of nodes) {
 			const count =
@@ -56,7 +39,6 @@ export class Rig {
 		this.globalOrigVerts = new Float32Array(total * 2);
 		this.verts = new Float32Array(total * 2);
 
-		// 初期頂点を記録
 		for (const { node, start, end } of this.nodeRanges) {
 			const data = node.sprite.geometry.getBuffer("aPosition")
 				.data as Float32Array;
@@ -102,7 +84,6 @@ export class Rig {
 		this.h = bounds.h;
 	}
 
-	/** 変形済みバッファをメッシュに書き戻す */
 	private applyVerts(): void {
 		for (const { node, start, end } of this.nodeRanges) {
 			const buffer = node.sprite.geometry.getBuffer("aPosition");
@@ -115,12 +96,6 @@ export class Rig {
 		}
 	}
 
-	/**
-	 * ポーズを合成して頂点変形を適用する。毎フレーム呼び出す。
-	 * 複数のポーズはウェイト加算で合成される。
-	 *
-	 * @param poses - 適用するポーズの配列
-	 */
 	public apply(poses: Pose[]): void {
 		const total = this.origVerts.length / 2;
 

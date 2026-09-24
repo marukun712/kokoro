@@ -1,6 +1,10 @@
-import type { Animation } from "@kokoro/rig";
-import { AgentSeqSchema, resolveAgentSeq, setupCanvas } from "@kokoro/rig";
-import { getDepth, injectDepth } from "@kokoro/rig/depth";
+import {
+	AgentSeqSchema,
+	type Animation,
+	resolveSeqExpr,
+	setupCanvas,
+} from "@kokoro/rig";
+import { getDepth, injectDepthToPose, uvToDepth } from "@kokoro/rig/depth";
 import { Viewport } from "pixi-viewport";
 import { pickPNG } from "./setup";
 import { POSE_TEMPLATE } from "./template";
@@ -29,8 +33,9 @@ app.ticker.add(() => {
 	root.apply(currentAnim(elapsed));
 });
 
-const { getDepthFromUV } = await getDepth(container, app.renderer);
-const depthTemplate = injectDepth(POSE_TEMPLATE(0.5), getDepthFromUV);
+const { data, width, height } = await getDepth(container, app.renderer);
+const depthFunc = uvToDepth(data, width, height);
+const depthTemplate = injectDepthToPose(POSE_TEMPLATE(0.5), depthFunc);
 
 document.getElementById("loading")?.remove();
 
@@ -39,6 +44,6 @@ const es = new EventSource("http://localhost:3001/sse");
 es.addEventListener("play", (e) => {
 	const result = AgentSeqSchema.safeParse(JSON.parse(e.data));
 	if (!result.success) return;
-	currentAnim = resolveAgentSeq(depthTemplate, result.data);
+	currentAnim = resolveSeqExpr(depthTemplate, result.data);
 	animStart = performance.now();
 });

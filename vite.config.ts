@@ -19,9 +19,9 @@ export default defineConfig({
 		rollupOptions: {
 			input: {
 				main: resolve(import.meta.dirname, "index.html"),
-				audio: resolve(import.meta.dirname, "audio.html"),
 				template: resolve(import.meta.dirname, "template.html"),
 				depth: resolve(import.meta.dirname, "depth.html"),
+				depthVideo: resolve(import.meta.dirname, "depth-video.html"),
 				agent: resolve(import.meta.dirname, "agent.html"),
 			},
 		},

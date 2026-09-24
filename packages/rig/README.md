@@ -100,6 +100,21 @@ const nodes = await drawPNG("/models/character.png");
 app.stage.addChild(nodes[0].container);
 ```
 
+### `drawVideo(url, verticesX?, verticesY?)`
+
+動画ファイルを取得して単一の `SpriteNode[]` として返します。`sprite` のテクスチャは動画フレームで自動更新されます。
+
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `url` | `string` | 動画ファイルの URL |
+| `verticesX` | `number` | メッシュの水平分割数 (デフォルト: `250`) |
+| `verticesY` | `number` | メッシュの垂直分割数 (デフォルト: `250`) |
+
+```ts
+const nodes = await drawVideo("/models/character.mp4");
+app.stage.addChild(nodes[0].container);
+```
+
 ---
 
 ## レイヤーの絞り込み (GroupMatcher)
@@ -214,7 +229,7 @@ app.ticker.add(() => {
 
 ```ts
 const left: Pose = (u, v) => {
-  const { fromBottom } = getSpatialParams(u, v);
+  const { fromBottom } = getMeshPosition(u, v);
   return { tx: -100 * fromBottom, ty: 0 };
 };
 
@@ -225,15 +240,15 @@ const tilt: Pose = (u, v) => {
 
 ---
 
-## getSpatialParams と curve
+## getMeshPosition と curve
 
-### `getSpatialParams(u, v)`
+### `getMeshPosition(u, v)`
 
 UV 座標から頂点の空間的な位置パラメータを返します。`Pose` 内でウェイト計算に使います。
 
-戻り値の型は `SpatialParams` です。
+戻り値の型は `MeshPosition` です。
 
-#### `SpatialParams`
+#### `MeshPosition`
 
 | フィールド | 型 | 説明 |
 |---|---|---|
@@ -247,7 +262,7 @@ UV 座標から頂点の空間的な位置パラメータを返します。`Pose
 
 ### `curve`
 
-イージング関数の辞書です。`getSpatialParams` で得た値をウェイトへ変換する際に使います。型は `Curve = (t: number) => number` です。
+イージング関数の辞書です。`getMeshPosition` で得た値をウェイトへ変換する際に使います。型は `Curve = (t: number) => number` です。
 
 | キー | イージング |
 |---|---|
@@ -256,7 +271,7 @@ UV 座標から頂点の空間的な位置パラメータを返します。`Pose
 | `power4` | 四乗 (t^4) |
 
 ```ts
-const { fromBottom } = getSpatialParams(u, v);
+const { fromBottom } = getMeshPosition(u, v);
 return { tx: -50 * curve.power2(fromBottom), ty: 0 };
 ```
 
@@ -264,7 +279,7 @@ return { tx: -50 * curve.power2(fromBottom), ty: 0 };
 
 | 型 | シグネチャ | 説明 |
 |---|---|---|
-| `Curve` | `(t: number) => number` | イージング関数。`getSpatialParams` の戻り値をウェイトへ変換する際に使う |
+| `Curve` | `(t: number) => number` | イージング関数。`getMeshPosition` の戻り値をウェイトへ変換する際に使う |
 | `Guard` | `(t: number) => boolean` | 条件を満たすか返す述語関数。ポーズの適用範囲を限定するガード条件に使う |
 
 ---
@@ -373,12 +388,12 @@ switcher.apply({ "目_閉じ": true, "口_あ": false });
 
 ---
 
-## AI Agent 連携 - resolveAgentSeq / AgentSeqSchema
+## AI Agent 連携 - resolveSeqExpr / AgentSeqSchema
 
 MCP サーバー経由で AI Agent からアニメーションを受け取る際に使います。
 
 ```ts
-import { AgentSeqSchema, resolveAgentSeq } from "@kokoro/rig";
+import { AgentSeqSchema, resolveSeqExpr } from "@kokoro/rig";
 ```
 
 #### `PoseExpr`
@@ -394,7 +409,6 @@ import { AgentSeqSchema, resolveAgentSeq } from "@kokoro/rig";
 |---|---|---|
 | `pose` | `PoseExpr` | 遷移先のポーズ |
 | `duration` | `number` | 遷移にかける時間 (秒) |
-| `ease` | `string` (省略可) | イージング名。`"linear"` / `"easeIn"` / `"easeOut"` / `"easeInOut"` |
 
 #### `AgentSeq`
 
@@ -402,15 +416,15 @@ import { AgentSeqSchema, resolveAgentSeq } from "@kokoro/rig";
 
 ### `AgentSeqSchema`
 
-Zod スキーマです。SSE などで受け取った未検証の JSON を `safeParse` で検証してから `resolveAgentSeq` に渡してください。
+Zod スキーマです。SSE などで受け取った未検証の JSON を `safeParse` で検証してから `resolveSeqExpr` に渡してください。
 
 ```ts
 const result = AgentSeqSchema.safeParse(JSON.parse(raw));
 if (!result.success) return;
-const anim = resolveAgentSeq(POSE_TEMPLATE, result.data);
+const anim = resolveSeqExpr(POSE_TEMPLATE, result.data);
 ```
 
-### `resolveAgentSeq(template, agentSeq)`
+### `resolveSeqExpr(template, agentSeq)`
 
 `AgentSeq` を `Animation` に変換します。
 
@@ -433,12 +447,12 @@ app.ticker.add(() => {
 `@kokoro/rig/depth`は、深度推定に基づいて各頂点の変形量をスケールさせるモジュールです。
 
 ```ts
-import { getDepth, injectDepth } from "@kokoro/rig/depth";
+import { extractDepth, getDepth, injectDepthToPose, uvToDepth } from "@kokoro/rig/depth";
 ```
 
 ### `getDepth(container, renderer, model?)`
 
-PIXI の Container をキャプチャして深度推定を行い、`DepthResult` を返します。推論は Web Worker 上で動作します。
+PIXI の Container をキャプチャして深度推定を行い、`DepthResult` を返します。推論は Web Worker 上で動作します。静止画像 1 枚分の深度マップを推論する際に使います。
 
 | 引数 | 型 | 説明 |
 |---|---|---|
@@ -453,31 +467,77 @@ type DepthModelSize = "small" | "base" | "large";
 ```
 
 ```ts
-const depthResult = await getDepth(container, app.renderer);
+const { data, width, height } = await getDepth(container, app.renderer);
 ```
 
 #### `DepthResult`
 
 | プロパティ | 型 | 説明 |
 |---|---|---|
-| `getDepthFromUV` | `(u, v) => number` | UV 座標から深度値 (0~1) を取得する関数 |
-| `details.data` | `Uint8Array` | 深度マップの生ピクセルデータ |
-| `details.width`, `details.height` | `number` | 深度マップのサイズ |
+| `data` | `Uint8Array` | 深度マップの生ピクセルデータ |
+| `width`, `height` | `number` | 深度マップのサイズ |
 
-### `injectDepth(template, depthFunc)`
+### `extractDepth(container, renderer)`
+
+PIXI の Container から深度マップの生ピクセルデータをそのまま抽出します。推論は行わず、既に深度マップとして描画されている Container (深度推定済みの動画フレームなど) から毎フレーム値を読み出す際に使います。
+
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `container` | `PIXI.Container` | 抽出対象 |
+| `renderer` | `PIXI.Renderer` | ピクセル抽出に使用 |
+
+```ts
+const frame = extractDepth(depthContainer, depthApp.renderer);
+```
+
+### `uvToDepth(data, width, height)`
+
+`DepthResult` (または `extractDepth` の戻り値) の生ピクセルデータから、UV 座標を受け取って深度値 (0~1) を返す関数を作ります。
+
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `data` | `Uint8Array` | 深度マップの生ピクセルデータ |
+| `width`, `height` | `number` | 深度マップのサイズ |
+
+```ts
+const depthFunc = uvToDepth(data, width, height);
+```
+
+### `injectDepthToPose(template, depthFunc)`
 
 既存のポーズテンプレートに深度スケールを注入します。各ポーズの `tx` / `ty` が UV 座標の深度値 (0~1) で乗算され、手前の頂点ほど大きく動くようになります。
 
 | 引数 | 型 | 説明 |
 |---|---|---|
 | `template` | `Record<string, Pose>` | 注入対象のポーズテンプレート |
-| `depthFunc` | `(u, v) => number` | UV 座標から深度値 (0~1) を返す関数 (`DepthResult.getDepthFromUV`) |
+| `depthFunc` | `(u, v) => number` | UV 座標から深度値 (0~1) を返す関数 (`uvToDepth` の戻り値) |
+
+静止画像の場合、深度マップは一度だけ推論すれば十分です。
 
 ```ts
-const depthTemplate = injectDepth(POSE_TEMPLATE, depthResult.getDepthFromUV);
+const { data, width, height } = await getDepth(container, app.renderer);
+const depthFunc = uvToDepth(data, width, height);
+const depthTemplate = injectDepthToPose(POSE_TEMPLATE, depthFunc);
 
-rig.apply([
-  lerpPose(depthTemplate.left, depthTemplate.right, mouseX),
-  lerpPose(depthTemplate.up, depthTemplate.down, mouseY),
-]);
+app.ticker.add(() => {
+  rig.apply([
+    lerpPose(depthTemplate.left, depthTemplate.right, mouseX),
+    lerpPose(depthTemplate.up, depthTemplate.down, mouseY),
+  ]);
+});
+```
+
+動画の場合、深度マップ (深度推定済みの動画をあらかじめ別 Container に描画したもの) を毎フレーム `extractDepth` で読み出します。
+
+```ts
+app.ticker.add(() => {
+  const frame = extractDepth(depthContainer, depthApp.renderer);
+  const depthFunc = uvToDepth(frame.data, frame.width, frame.height);
+  const depthTemplate = injectDepthToPose(POSE_TEMPLATE, depthFunc);
+
+  rig.apply([
+    lerpPose(depthTemplate.left, depthTemplate.right, mouseX),
+    lerpPose(depthTemplate.up, depthTemplate.down, mouseY),
+  ]);
+});
 ```

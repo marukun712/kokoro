@@ -1,8 +1,8 @@
-import { curve, getSpatialParams } from "@kokoro/rig";
+import { curve, getMeshPosition } from "@kokoro/rig";
 
 export const POSE_TEMPLATE = (scale: number = 1) => ({
 	left: (u: number, v: number) => {
-		const { fromTop } = getSpatialParams(u, v);
+		const { fromTop } = getMeshPosition(u, v);
 		const w = curve.power2(fromTop);
 
 		return {
@@ -12,7 +12,7 @@ export const POSE_TEMPLATE = (scale: number = 1) => ({
 	},
 
 	right: (u: number, v: number) => {
-		const { fromTop } = getSpatialParams(u, v);
+		const { fromTop } = getMeshPosition(u, v);
 		const w = curve.power2(fromTop);
 
 		return {
@@ -22,7 +22,7 @@ export const POSE_TEMPLATE = (scale: number = 1) => ({
 	},
 
 	up: (u: number, v: number) => {
-		const { fromTop } = getSpatialParams(u, v);
+		const { fromTop } = getMeshPosition(u, v);
 		const w = curve.power2(fromTop);
 
 		return {
@@ -32,7 +32,7 @@ export const POSE_TEMPLATE = (scale: number = 1) => ({
 	},
 
 	down: (u: number, v: number) => {
-		const { fromTop } = getSpatialParams(u, v);
+		const { fromTop } = getMeshPosition(u, v);
 		const w = curve.power2(fromTop);
 
 		return {
@@ -44,7 +44,7 @@ export const POSE_TEMPLATE = (scale: number = 1) => ({
 
 export const HAIR_TEMPLATE = {
 	leftFront: (u: number, v: number) => {
-		const { fromBottom } = getSpatialParams(u, v);
+		const { fromBottom } = getMeshPosition(u, v);
 
 		return {
 			tx: -50 * fromBottom,
@@ -53,7 +53,7 @@ export const HAIR_TEMPLATE = {
 	},
 
 	rightFront: (u: number, v: number) => {
-		const { fromBottom } = getSpatialParams(u, v);
+		const { fromBottom } = getMeshPosition(u, v);
 
 		return {
 			tx: 50 * fromBottom,
@@ -62,7 +62,7 @@ export const HAIR_TEMPLATE = {
 	},
 
 	leftBack: (u: number, v: number) => {
-		const { fromBottom } = getSpatialParams(u, v);
+		const { fromBottom } = getMeshPosition(u, v);
 
 		return {
 			tx: 10 * fromBottom,
@@ -71,7 +71,7 @@ export const HAIR_TEMPLATE = {
 	},
 
 	rightBack: (u: number, v: number) => {
-		const { fromBottom } = getSpatialParams(u, v);
+		const { fromBottom } = getMeshPosition(u, v);
 
 		return {
 			tx: -10 * fromBottom,
@@ -82,7 +82,7 @@ export const HAIR_TEMPLATE = {
 
 export const SWING_TEMPLATE =
 	(t: number, scale: number) => (u: number, v: number) => {
-		const { fromBottom } = getSpatialParams(u, v);
+		const { fromBottom } = getMeshPosition(u, v);
 		const w = curve.power2(fromBottom);
 		const swing = Math.sin(t);
 

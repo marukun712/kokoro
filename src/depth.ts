@@ -1,5 +1,5 @@
 import { lerpPose, setupCanvas } from "@kokoro/rig";
-import { getDepth, injectDepth } from "@kokoro/rig/depth";
+import { getDepth, injectDepthToPose, uvToDepth } from "@kokoro/rig/depth";
 import gsap from "gsap";
 import { Viewport } from "pixi-viewport";
 import { pickPNG } from "./setup";
@@ -18,9 +18,9 @@ app.stage.addChild(viewport);
 viewport.drag().pinch().wheel();
 viewport.addChild(container);
 
-const { getDepthFromUV } = await getDepth(container, app.renderer);
-
-const depthTemplate = injectDepth(POSE_TEMPLATE(2), getDepthFromUV);
+const { data, width, height } = await getDepth(container, app.renderer);
+const depthFunc = uvToDepth(data, width, height);
+const depthTemplate = injectDepthToPose(POSE_TEMPLATE(2), depthFunc);
 
 document.getElementById("loading")?.remove();
 

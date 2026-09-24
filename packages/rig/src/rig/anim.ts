@@ -2,52 +2,32 @@ import { z } from "zod";
 import { lerpPose } from "../utils/utils";
 import type { Pose } from "./rig";
 
-/** 絶対秒数を受け取り Pose[] を返す関数型 */
 export type Animation = (t: number) => Pose[];
-
-/**
- * Agent が指定するポーズ表現。
- * テンプレート名の文字列、または2つのテンプレートを `t` (0~1) で補間した中間ポーズ。
- */
 export type PoseExpr = string | { lerp: [string, string]; t: number };
-export type AgentClip = { pose: PoseExpr; duration: number; ease?: string };
-export type AgentSeq = AgentClip[];
-
 export const PoseExprSchema: z.ZodType<PoseExpr> = z.union([
 	z.string(),
 	z.object({ lerp: z.tuple([z.string(), z.string()]), t: z.number() }),
 ]);
 
-/**
- * Agent が組み立てるアニメーションの1クリップ。
- * `pose` へ `duration` 秒かけて遷移する。
- */
+export type AgentClip = { pose: PoseExpr; duration: number };
+export type AgentSeq = AgentClip[];
 export const AgentClipSchema: z.ZodType<AgentClip> = z.object({
 	pose: PoseExprSchema,
 	duration: z.number(),
-	ease: z.string().optional(),
 });
 
-/** Agent が MCP 経由で送るアニメーションシーケンス。`safeParse` で検証して使う。 */
 export const AgentSeqSchema: z.ZodType<AgentSeq> = z.array(AgentClipSchema);
 
 export type Clip = {
 	duration: number;
 	pose: Pose;
-	/** 補間係数 (0~1) を変換するイージング関数。省略時は線形 */
 	ease?: (t: number) => number;
 };
 
-/** duration 秒周期でループする Animation を返す */
 export function loop(anim: Animation, duration: number): Animation {
 	return (t) => anim(((t % duration) + duration) % duration);
 }
 
-/**
- * ポーズのキーフレーム列を順番に補間する Animation を返す。
- * 各クリップは「前のポーズからこのポーズへ duration 秒かけて遷移する」を意味する。
- * 先頭クリップの遷移元は末尾クリップのポーズ（loop との組み合わせで自然につながる）。
- */
 export function seq(clips: Clip[]): Animation {
 	return (t) => {
 		let elapsed = 0;
@@ -68,14 +48,7 @@ export function seq(clips: Clip[]): Animation {
 	};
 }
 
-/**
- * {@link AgentSeq} を実際の {@link Animation} に変換する。
- * `PoseExpr` がテンプレート名の場合は `template` を参照し、`lerp` の場合は {@link lerpPose} で合成する。
- *
- * @param template - テンプレート名と `Pose` のマップ
- * @param agentSeq - Agent から受け取ったシーケンス（{@link AgentSeqSchema} で検証済みのもの）
- */
-export function resolveAgentSeq(
+export function resolveSeqExpr(
 	template: Record<string, Pose>,
 	agentSeq: AgentSeq,
 ): Animation {

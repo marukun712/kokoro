@@ -2,45 +2,23 @@ import { type Layer, readPsd } from "ag-psd";
 import * as PIXI from "pixi.js";
 import type { GroupMatcher } from "../rig/matcher";
 
-/** PSD レイヤー1枚分のフラットな情報 */
 export interface PSDIndex {
-	/** レイヤー名*/
 	name: string;
-	/** ルートからこのレイヤーまでのパス */
 	path: string[];
-	/** ag-psd が生成した Canvas */
 	canvas: HTMLCanvasElement;
-	/** レイヤーの左端 X 座標 */
 	x: number;
-	/** レイヤーの上端 Y 座標 */
 	y: number;
-	/** クリッピングマスク対象か */
 	clipping: boolean;
-	/** 隠れレイヤかどうか*/
 	hidden: boolean;
 }
 
-/** PIXI スプライトと対応するメタ情報 */
 export interface SpriteNode {
-	/** レイヤー名 */
 	name: string;
-	/** ルートからこのノードまでのパス */
 	path: string[];
-	/** スプライトを包む Container*/
 	container: PIXI.Container;
-	/** メッシュ変形可能なスプライト本体 */
 	sprite: PIXI.MeshPlane;
 }
 
-/**
- * PSD ファイルを取得してレイヤーを再帰的に走査し、フラットな配列で返す。
- * グループレイヤーは展開され、末端レイヤーのみが含まれる。
- *
- * @param url     - PSD ファイルの URL
- * @param visible - 表示/非表示を上書きするマッチャー。
- *                  `show` に一致するレイヤーは強制表示、`hide` に一致するレイヤーは強制非表示になる。
- * @returns フラット化された {@link PSDIndex} の配列
- */
 export async function walkPSD(
 	url: string,
 	visible?: {
@@ -86,12 +64,6 @@ export async function walkPSD(
 	return result;
 }
 
-/**
- * {@link PSDIndex} の配列から PIXI スプライトを生成する。
- *
- * @param layers - {@link walkPSD} の戻り値
- * @returns {@link SpriteNode} の配列。描画順は入力と同じ
- */
 export function drawPSD(
 	layers: PSDIndex[],
 	verticesX = 250,

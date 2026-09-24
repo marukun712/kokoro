@@ -1,12 +1,6 @@
 import * as PIXI from "pixi.js";
 import type { SpriteNode } from "./psd";
 
-/**
- * PNG ファイルを取得して単一の SpriteNode として返す。
- *
- * @param url - PNG ファイルの URL
- * @returns 要素1つの {@link SpriteNode} 配列
- */
 export async function drawPNG(
 	url: string,
 	verticesX = 250,

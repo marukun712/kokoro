@@ -1,12 +1,6 @@
 import { initializeCanvas } from "ag-psd";
 import * as PIXI from "pixi.js";
 
-/**
- * PIXI Application を初期化して指定の親要素にマウントする。
- *
- * @param parent - canvas を追加する DOM 要素
- * @returns 初期化済みの PIXI.Application
- */
 export async function setupCanvas(
 	parent: HTMLElement,
 ): Promise<PIXI.Application> {
