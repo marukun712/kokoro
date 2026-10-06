@@ -3,6 +3,8 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
 	base: "/kokoro/",
+	root: resolve(import.meta.dirname, "demos"),
+	publicDir: resolve(import.meta.dirname, "public"),
 	server: {
 		headers: {
 			"Cross-Origin-Opener-Policy": "same-origin",
@@ -16,13 +18,13 @@ export default defineConfig({
 		},
 	},
 	build: {
+		outDir: resolve(import.meta.dirname, "dist"),
 		rollupOptions: {
 			input: {
-				main: resolve(import.meta.dirname, "index.html"),
-				template: resolve(import.meta.dirname, "template.html"),
-				depth: resolve(import.meta.dirname, "depth.html"),
-				depthVideo: resolve(import.meta.dirname, "depth-video.html"),
-				agent: resolve(import.meta.dirname, "agent.html"),
+				main: resolve(import.meta.dirname, "demos/index.html"),
+				template: resolve(import.meta.dirname, "demos/template.html"),
+				depth: resolve(import.meta.dirname, "demos/depth.html"),
+				agent: resolve(import.meta.dirname, "demos/agent.html"),
 			},
 		},
 	},
