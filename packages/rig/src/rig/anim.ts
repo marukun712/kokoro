@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { lerpPose } from "../utils/utils";
+import { curve, lerpPose } from "../utils/utils";
 import type { Pose } from "./rig";
 
 export type Animation = (t: number) => Pose[];
@@ -9,11 +9,23 @@ export const PoseExprSchema: z.ZodType<PoseExpr> = z.union([
 	z.object({ lerp: z.tuple([z.string(), z.string()]), t: z.number() }),
 ]);
 
-export type AgentClip = { pose: PoseExpr; duration: number };
+export type CurveName = keyof typeof curve;
+export const CurveNameSchema: z.ZodType<CurveName> = z.enum([
+	"power2",
+	"power3",
+	"power4",
+]);
+
+export type AgentClip = {
+	pose: PoseExpr;
+	duration: number;
+	ease?: CurveName;
+};
 export type AgentSeq = AgentClip[];
 export const AgentClipSchema: z.ZodType<AgentClip> = z.object({
 	pose: PoseExprSchema,
 	duration: z.number(),
+	ease: CurveNameSchema.optional(),
 });
 
 export const AgentSeqSchema: z.ZodType<AgentSeq> = z.array(AgentClipSchema);
@@ -59,7 +71,9 @@ export function resolveSeqExpr(
 				? template[expr]
 				: lerpPose(template[expr.lerp[0]], template[expr.lerp[1]], expr.t);
 
-		return { pose, duration: agentClip.duration };
+		const ease = agentClip.ease ? curve[agentClip.ease] : undefined;
+
+		return { pose, duration: agentClip.duration, ease };
 	});
 
 	return seq(clips);

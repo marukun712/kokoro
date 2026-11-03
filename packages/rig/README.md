@@ -409,6 +409,7 @@ import { AgentSeqSchema, resolveSeqExpr } from "@kokoro/rig";
 |---|---|---|
 | `pose` | `PoseExpr` | 遷移先のポーズ |
 | `duration` | `number` | 遷移にかける時間 (秒) |
+| `ease` | `CurveName` (省略可) | `curve` のキー名 (`"power2"` など)。省略時は線形 |
 
 #### `AgentSeq`
 
