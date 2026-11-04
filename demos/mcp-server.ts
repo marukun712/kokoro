@@ -1,5 +1,5 @@
 import { StreamableHTTPTransport } from "@hono/mcp";
-import { AgentSeqSchema } from "@kokoro/rig";
+import { SeqExprSchema } from "@kokoro/rig";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -31,7 +31,7 @@ mcp.registerTool(
 	"play",
 	{
 		description: "Play an animation sequence on the character",
-		inputSchema: { seq: AgentSeqSchema },
+		inputSchema: { seq: SeqExprSchema },
 	},
 	async ({ seq }) => {
 		const data = JSON.stringify(seq);

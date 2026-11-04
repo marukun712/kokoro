@@ -1,39 +1,40 @@
+import { all, create } from "mathjs/number";
 import { z } from "zod";
-import { curve, lerpPose } from "../utils/utils";
+import { type Curve, lerpPose } from "../utils/utils";
 import type { Pose } from "./rig";
 
-export type Animation = (t: number) => Pose[];
+const math = create(all);
+
 export type PoseExpr = string | { lerp: [string, string]; t: number };
 export const PoseExprSchema: z.ZodType<PoseExpr> = z.union([
 	z.string(),
 	z.object({ lerp: z.tuple([z.string(), z.string()]), t: z.number() }),
 ]);
 
-export type CurveName = keyof typeof curve;
-export const CurveNameSchema: z.ZodType<CurveName> = z.enum([
-	"power2",
-	"power3",
-	"power4",
-]);
+export type EaseExpr = string;
+export const EaseExprSchema: z.ZodType<EaseExpr> = z
+	.string()
+	.refine(canEvalEase, { message: "t の数式として評価できません" });
 
-export type AgentClip = {
+export type ClipExpr = {
 	pose: PoseExpr;
 	duration: number;
-	ease?: CurveName;
+	ease?: EaseExpr;
 };
-export type AgentSeq = AgentClip[];
-export const AgentClipSchema: z.ZodType<AgentClip> = z.object({
+export type SeqExpr = ClipExpr[];
+export const ClipExprSchema: z.ZodType<ClipExpr> = z.object({
 	pose: PoseExprSchema,
 	duration: z.number(),
-	ease: CurveNameSchema.optional(),
+	ease: EaseExprSchema.optional(),
 });
 
-export const AgentSeqSchema: z.ZodType<AgentSeq> = z.array(AgentClipSchema);
+export const SeqExprSchema: z.ZodType<SeqExpr> = z.array(ClipExprSchema);
 
+export type Animation = (t: number) => Pose[];
 export type Clip = {
 	duration: number;
 	pose: Pose;
-	ease?: (t: number) => number;
+	ease?: Curve;
 };
 
 export function loop(anim: Animation, duration: number): Animation {
@@ -60,20 +61,43 @@ export function seq(clips: Clip[]): Animation {
 	};
 }
 
+function compileEase(expr: string): (t: number) => unknown {
+	const code = math.compile(expr);
+
+	return (t) => code.evaluate({ t });
+}
+
+function canEvalEase(expr: string): boolean {
+	try {
+		return typeof compileEase(expr)(0.5) === "number";
+	} catch {
+		return false;
+	}
+}
+
+export function resolveEaseExpr(expr: EaseExpr): Curve {
+	const evalAt = compileEase(expr);
+
+	return (t) => {
+		const value = evalAt(t);
+		return typeof value === "number" ? value : t;
+	};
+}
+
 export function resolveSeqExpr(
 	template: Record<string, Pose>,
-	agentSeq: AgentSeq,
+	seqExpr: SeqExpr,
 ): Animation {
-	const clips: Clip[] = agentSeq.map((agentClip) => {
-		const expr = agentClip.pose;
+	const clips: Clip[] = seqExpr.map((clipExpr) => {
+		const expr = clipExpr.pose;
 		const pose =
 			typeof expr === "string"
 				? template[expr]
 				: lerpPose(template[expr.lerp[0]], template[expr.lerp[1]], expr.t);
 
-		const ease = agentClip.ease ? curve[agentClip.ease] : undefined;
+		const ease = clipExpr.ease ? resolveEaseExpr(clipExpr.ease) : undefined;
 
-		return { pose, duration: agentClip.duration, ease };
+		return { pose, duration: clipExpr.duration, ease };
 	});
 
 	return seq(clips);

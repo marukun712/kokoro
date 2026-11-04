@@ -1,7 +1,7 @@
 import {
-	AgentSeqSchema,
 	type Animation,
 	resolveSeqExpr,
+	SeqExprSchema,
 	setupCanvas,
 } from "@kokoro/rig";
 import { getDepth, injectDepthToPose, uvToDepth } from "@kokoro/rig/depth";
@@ -42,7 +42,7 @@ document.getElementById("loading")?.remove();
 const es = new EventSource("http://localhost:3001/sse");
 
 es.addEventListener("play", (e) => {
-	const result = AgentSeqSchema.safeParse(JSON.parse(e.data));
+	const result = SeqExprSchema.safeParse(JSON.parse(e.data));
 	if (!result.success) return;
 	currentAnim = resolveSeqExpr(depthTemplate, result.data);
 	animStart = performance.now();

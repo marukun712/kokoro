@@ -2,11 +2,6 @@
 
 エンジニアのための2Dキャラクターメッシュ変形ライブラリ
 
-## コアコンセプト
-
-`@kokoro/rig`は、エンジニアのための2Dキャラクターメッシュ変形ライブラリです。既存のツール・ライブラリはGUI操作を前提としており、表現としては豊かなものの、GUI・概念の学習コストが高く、すぐにキャラクターを動かすことができません。本ライブラリでは、キャラクターの変形に複雑な概念を用いません。キャラクターの変形は、すべて`(u,v) => 変形量`の関数として記述されます。ポーズの合成・補完も、関数を合成するような感覚で実装できます。
-さらに、深度推定モジュールと組み合わせることで、深度情報に基づいて各頂点の変形量が自動でスケールされます。
-
 ---
 
 ## インストール
@@ -21,8 +16,6 @@ npx jsr add @kokoro/rig
 
 ### `setupCanvas(parent)`
 
-PIXI Application を初期化して DOM に追加します。
-
 ```ts
 const app = await setupCanvas(document.body);
 ```
@@ -33,14 +26,11 @@ const app = await setupCanvas(document.body);
 
 ### `walkPSD(url, visible?)`
 
-PSD ファイルを取得してレイヤーを再帰的に走査し、末端レイヤーをフラットな `PSDIndex[]` として返します。
-
 ```ts
 const layers = await walkPSD("/models/character.psd");
 ```
 
-`visible` オプションでロード時にレイヤーの表示状態を上書きできます。
-
+デフォルトで表示/非表示のレイヤーを切り替える場合
 ```ts
 const layers = await walkPSD("/models/character.psd", {
   show: psdGroup("衣装A"),
@@ -60,8 +50,6 @@ const layers = await walkPSD("/models/character.psd", {
 | `hidden` | `boolean` | 非表示レイヤーか |
 
 ### `drawPSD(layers, verticesX?, verticesY?)`
-
-`PSDIndex[]` から PIXI スプライト (`SpriteNode[]`) を生成して返します。各スプライトは `PIXI.MeshPlane` で作られており、頂点変形が可能です。クリッピングマスク対象のレイヤー (`clipping: true`) はスキップされます。
 
 | 引数 | 型 | 説明 |
 |---|---|---|
@@ -87,8 +75,6 @@ for (const node of nodes) {
 
 ### `drawPNG(url, verticesX?, verticesY?)`
 
-PNG ファイルを取得して単一の `SpriteNode[]` として返します。PSD を使わない場合に使用します。
-
 | 引数 | 型 | 説明 |
 |---|---|---|
 | `url` | `string` | PNG ファイルの URL |
@@ -101,8 +87,6 @@ app.stage.addChild(nodes[0].container);
 ```
 
 ### `drawVideo(url, verticesX?, verticesY?)`
-
-動画ファイルを取得して単一の `SpriteNode[]` として返します。`sprite` のテクスチャは動画フレームで自動更新されます。
 
 | 引数 | 型 | 説明 |
 |---|---|---|
@@ -118,8 +102,6 @@ app.stage.addChild(nodes[0].container);
 ---
 
 ## レイヤーの絞り込み (GroupMatcher)
-
-`GroupMatcher` はノードを受け取って `boolean` を返す関数型です。`groupNodes` や `walkPSD` の絞り込み条件として使います。
 
 ### `byName(name)`
 
@@ -160,8 +142,6 @@ or(byName("目_閉じ"), psdGroup("まつ毛"))
 
 ### `groupNodes(nodes, matcher)`
 
-`GroupMatcher` でフィルタしたノードを `Group` にまとめます。プロパティを変更すると全ノードの Container に一括反映されます。
-
 ```ts
 const hair = groupNodes(nodes, psdGroup("前髪"));
 hair.visible = false;
@@ -185,15 +165,11 @@ hair.x = 10;
 
 ## Rig - メッシュ変形
 
-`Rig` はキャラクターの頂点を毎フレーム書き換えることでソフトボディ的な変形を実現するクラスです。各頂点を UV 座標 (u, v) に正規化してから `Pose` を呼び出し、平行移動と回転を計算して頂点バッファに書き戻します。
-
 ```ts
 const rig = new Rig(nodes);
 ```
 
 ### `apply(poses)`
-
-ポーズを適用して頂点変形を行います。複数渡した場合はウェイト加算で合成されます。毎フレーム呼び出してください。
 
 ```ts
 app.ticker.add(() => {
@@ -205,8 +181,6 @@ app.ticker.add(() => {
 ```
 
 #### `Rig` のバウンディングボックス
-
-コンストラクタ内でノード群の AABB が計算されます。
 
 | プロパティ | 説明 |
 |---|---|
@@ -244,10 +218,6 @@ const tilt: Pose = (u, v) => {
 
 ### `getMeshPosition(u, v)`
 
-UV 座標から頂点の空間的な位置パラメータを返します。`Pose` 内でウェイト計算に使います。
-
-戻り値の型は `MeshPosition` です。
-
 #### `MeshPosition`
 
 | フィールド | 型 | 説明 |
@@ -261,8 +231,6 @@ UV 座標から頂点の空間的な位置パラメータを返します。`Pose
 | `isUpperBody` | `boolean` | 上半身か否か (v < 0.5) |
 
 ### `curve`
-
-イージング関数の辞書です。`getMeshPosition` で得た値をウェイトへ変換する際に使います。型は `Curve = (t: number) => number` です。
 
 | キー | イージング |
 |---|---|
@@ -343,8 +311,6 @@ app.ticker.add(() => {
 
 ### `seq(clips)`
 
-`Clip[]` のキーフレーム列を順番に補間する `Animation` を返します。各クリップは「前のポーズからこのポーズへ `duration` 秒かけて遷移する」を意味します。先頭クリップの遷移元は末尾クリップのポーズになるため、`loop` と組み合わせると自然につながります。
-
 | 引数 | 型 | 説明 |
 |---|---|---|
 | `clips` | `Clip[]` | キーフレームの配列 |
@@ -370,8 +336,6 @@ const apply = withParent(bodyRig, rootPoses);
 apply(hairRig, [SWING_POSE]);
 ```
 
-`follow(child, parent, pose)` は、親の UV 空間で定義されたポーズを子リグの UV 空間に変換して返します。`withParent` は内部でこれを使っています。
-
 ---
 
 ## Switcher - レイヤー表示切替
@@ -384,16 +348,12 @@ const switcher = new Switcher(nodes, ["目_閉じ", "口_あ"]);
 switcher.apply({ "目_閉じ": true, "口_あ": false });
 ```
 
-コンストラクタに渡したレイヤー名ごとに `psdGroup` でグループが作成され、`apply` で一括切り替えします。
-
 ---
 
-## AI Agent 連携 - resolveSeqExpr / AgentSeqSchema
-
-MCP サーバー経由で AI Agent からアニメーションを受け取る際に使います。
+## シーケンス式 - resolveSeqExpr / SeqExprSchema
 
 ```ts
-import { AgentSeqSchema, resolveSeqExpr } from "@kokoro/rig";
+import { resolveEaseExpr, resolveSeqExpr, SeqExprSchema } from "@kokoro/rig";
 ```
 
 #### `PoseExpr`
@@ -403,42 +363,65 @@ import { AgentSeqSchema, resolveSeqExpr } from "@kokoro/rig";
 | `string` | テンプレート名。`POSE_TEMPLATE["name"]` を参照する |
 | `{ lerp: [string, string], t: number }` | 2つのテンプレートを `t` (0~1) で補間した中間ポーズを作る |
 
-#### `AgentClip`
+#### `EaseExpr`
+
+変数 `t` (0~1) の数式を書いた文字列です。評価には [mathjs](https://mathjs.org/docs/expressions/parsing.html) を使います。
+
+| 式 | イージング |
+|---|---|
+| `"t"` | 線形 |
+| `"t^2"` | ease in |
+| `"1 - (1 - t)^3"` | ease out |
+| `"t^2 * (3 - 2 * t)"` | ease in-out |
+
+#### `ClipExpr`
 
 | フィールド | 型 | 説明 |
 |---|---|---|
 | `pose` | `PoseExpr` | 遷移先のポーズ |
 | `duration` | `number` | 遷移にかける時間 (秒) |
-| `ease` | `CurveName` (省略可) | `curve` のキー名 (`"power2"` など)。省略時は線形 |
+| `ease` | `EaseExpr` (省略可) | 補間係数を変換する数式。省略時は線形 |
 
-#### `AgentSeq`
+#### `SeqExpr`
 
-`AgentClip[]` の配列です。
+```json
+[
+  { "pose": "wave", "duration": 0.4, "ease": "1 - (1 - t)^3" },
+  { "pose": { "lerp": ["wave", "idle"], "t": 0.5 }, "duration": 0.4 }
+]
+```
 
-### `AgentSeqSchema`
-
-Zod スキーマです。SSE などで受け取った未検証の JSON を `safeParse` で検証してから `resolveSeqExpr` に渡してください。
+### `SeqExprSchema`
 
 ```ts
-const result = AgentSeqSchema.safeParse(JSON.parse(raw));
+const result = SeqExprSchema.safeParse(JSON.parse(raw));
 if (!result.success) return;
 const anim = resolveSeqExpr(POSE_TEMPLATE, result.data);
 ```
 
-### `resolveSeqExpr(template, agentSeq)`
+### `resolveSeqExpr(template, seqExpr)`
 
-`AgentSeq` を `Animation` に変換します。
+`SeqExpr` を `Animation` に変換します。
 
 | 引数 | 型 | 説明 |
 |---|---|---|
 | `template` | `Record<string, Pose>` | テンプレート名と `Pose` のマップ |
-| `agentSeq` | `AgentSeq` | `AgentSeqSchema.safeParse` で検証済みのシーケンス |
+| `seqExpr` | `SeqExpr` | `SeqExprSchema.safeParse` で検証済みのシーケンス |
 
 ```ts
 app.ticker.add(() => {
   const elapsed = (performance.now() - animStart) / 1000;
   rig.apply(anim(elapsed));
 });
+```
+
+### `resolveEaseExpr(expr)`
+
+```ts
+const breathe = loop(seq([
+  { duration: 1.0, pose: POSE_EXHALE, ease: resolveEaseExpr("t^2") },
+  { duration: 1.0, pose: POSE_INHALE, ease: resolveEaseExpr("t^2") },
+]), 2.0);
 ```
 
 ---
@@ -452,8 +435,6 @@ import { extractDepth, getDepth, injectDepthToPose, uvToDepth } from "@kokoro/ri
 ```
 
 ### `getDepth(container, renderer, model?)`
-
-PIXI の Container をキャプチャして深度推定を行い、`DepthResult` を返します。推論は Web Worker 上で動作します。静止画像 1 枚分の深度マップを推論する際に使います。
 
 | 引数 | 型 | 説明 |
 |---|---|---|
@@ -480,8 +461,6 @@ const { data, width, height } = await getDepth(container, app.renderer);
 
 ### `extractDepth(container, renderer)`
 
-PIXI の Container から深度マップの生ピクセルデータをそのまま抽出します。推論は行わず、既に深度マップとして描画されている Container (深度推定済みの動画フレームなど) から毎フレーム値を読み出す際に使います。
-
 | 引数 | 型 | 説明 |
 |---|---|---|
 | `container` | `PIXI.Container` | 抽出対象 |
@@ -492,8 +471,6 @@ const frame = extractDepth(depthContainer, depthApp.renderer);
 ```
 
 ### `uvToDepth(data, width, height)`
-
-`DepthResult` (または `extractDepth` の戻り値) の生ピクセルデータから、UV 座標を受け取って深度値 (0~1) を返す関数を作ります。
 
 | 引数 | 型 | 説明 |
 |---|---|---|
@@ -506,14 +483,10 @@ const depthFunc = uvToDepth(data, width, height);
 
 ### `injectDepthToPose(template, depthFunc)`
 
-既存のポーズテンプレートに深度スケールを注入します。各ポーズの `tx` / `ty` が UV 座標の深度値 (0~1) で乗算され、手前の頂点ほど大きく動くようになります。
-
 | 引数 | 型 | 説明 |
 |---|---|---|
 | `template` | `Record<string, Pose>` | 注入対象のポーズテンプレート |
 | `depthFunc` | `(u, v) => number` | UV 座標から深度値 (0~1) を返す関数 (`uvToDepth` の戻り値) |
-
-静止画像の場合、深度マップは一度だけ推論すれば十分です。
 
 ```ts
 const { data, width, height } = await getDepth(container, app.renderer);
@@ -527,8 +500,6 @@ app.ticker.add(() => {
   ]);
 });
 ```
-
-動画の場合、深度マップ (深度推定済みの動画をあらかじめ別 Container に描画したもの) を毎フレーム `extractDepth` で読み出します。
 
 ```ts
 app.ticker.add(() => {
